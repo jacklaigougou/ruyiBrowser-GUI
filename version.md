@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### v0.4.2 — fix: 预览分类过滤 webdriver 归类修正
+
+- `index.vue`：`webdriver:` 前缀从「指纹与硬件」分类移至「WebRTC」分类，修复「指纹与硬件」模式下仅显示 `webdriver:0` 的问题
+
 ### v0.4.1 — fix: fpfile预览数据缺失修正、预览加分类下拉过滤
 
 - `src/main/main.js`：`ruyi:preview-fpfile` handler 新增 camelCase→snake_case 字段映射，修复前端传入字段名与 `buildFpfileLines()` 期望字段名不一致导致 WebGL/canvas/屏幕宽高等参数全部缺失的问题

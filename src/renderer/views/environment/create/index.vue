@@ -93,10 +93,10 @@ const previewFilter = ref('all')
 const FILTER_PREFIXES = {
   region:   ['timezone:', 'language:'],
   webgl:    ['webgl.'],
-  hardware: ['canvas:', 'hardwareConcurrency:', 'width:', 'height:', 'fontSystem:', 'userAgent:', 'webdriver:'],
+  hardware: ['canvas:', 'hardwareConcurrency:', 'width:', 'height:', 'fontSystem:', 'userAgent:'],
   proxy:    ['httpauth.'],
   speech:   ['speech.'],
-  webrtc:   ['webrtcPolicy:', 'webrtcLocalIp4:', 'webrtcPublicIp4:'],
+  webrtc:   ['webrtcPolicy:', 'webrtcLocalIp4:', 'webrtcPublicIp4:', 'webdriver:'],
 }
 
 const filteredPreview = computed(() => {
