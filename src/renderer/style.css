@@ -141,17 +141,18 @@ body {
 }
 
 .nav-icon {
-  width: 16px;
-  height: 16px;
-  border-radius: 3px;
-  background: var(--accent);
+  width: 18px;
+  height: 18px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 9px;
-  color: #fff;
   flex-shrink: 0;
+  color: var(--text-muted);
+  transition: color .15s;
 }
+.nav-item:hover .nav-icon { color: var(--text); }
+.nav-item.router-link-active .nav-icon { color: var(--accent); }
+.nav-icon svg { width: 16px; height: 16px; }
 
 /* ── Card / page container ── */
 .page-card {
