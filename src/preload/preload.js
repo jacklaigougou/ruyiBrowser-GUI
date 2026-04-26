@@ -54,5 +54,8 @@ contextBridge.exposeInMainWorld('ruyi', {
 
   // 屏幕尺寸
   screenSize: () => ipcRenderer.invoke('ruyi:screen-size'),
+
+  // 代理连通测试
+  testProxy: (opts) => ipcRenderer.invoke('ruyi:test-proxy', opts),
 })
 

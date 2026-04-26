@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+### v0.3.6 — feat: 代理页重构、测试连通、一次性输入解析
+
+- `TabProxy.vue`：
+  - 仿指纹配置结构，改为两张可折叠卡片（代理设置 / WebRTC），标题栏下加分割线
+  - 代理类型改为 tab-opt 按钮组（直连/HTTP/SOCKS5），WebRTC 改为按钮组（禁用/真实/使用代理）
+  - 新增「一次性输入」行，支持 `ip|port|user|pass` 或 `ip:port:user:pass` 格式自动解析填入
+  - 用户名和密码合并为同一行
+  - Host 和端口同行，后接「测试连通」按钮及结果提示
+- `src/main/main.js`：
+  - 新增 `ruyi:test-proxy` IPC handler，HTTP 代理用 CONNECT 隧道测试，SOCKS5 完整握手（支持用户名密码认证），超时 8 秒
+  - 修复 `registerIpcHandlers` 函数缺少闭合 `}` 的语法错误
+- `src/preload/preload.js`：暴露 `testProxy(opts)`
+
 ### v0.3.5 — feat: 一键设置、分割线、删除硬件噪音、重命名按钮
 
 - `TabFingerprint.vue`：

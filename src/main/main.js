@@ -336,6 +336,91 @@ function registerIpcHandlers() {
     const { width, height } = screen.getPrimaryDisplay().size
     return { width, height }
   })
+
+  ipcMain.handle('ruyi:test-proxy', async (_event, { type, host, port, user, pass }) => {
+    const net = require('net')
+    const TARGET_HOST = 'www.google.com'
+    const TARGET_PORT = 80
+    const TIMEOUT = 8000
+
+    if (type === 'http') {
+      // HTTP CONNECT 隧道测试
+      return new Promise((resolve) => {
+        const auth = user ? `${user}:${pass}` : ''
+        const authHeader = auth ? `Proxy-Authorization: Basic ${Buffer.from(auth).toString('base64')}\r\n` : ''
+        const socket = net.createConnection({ host, port: Number(port) }, () => {
+          socket.write(`CONNECT ${TARGET_HOST}:${TARGET_PORT} HTTP/1.1\r\nHost: ${TARGET_HOST}\r\n${authHeader}\r\n`)
+        })
+        socket.setTimeout(TIMEOUT)
+        let buf = ''
+        socket.on('data', chunk => {
+          buf += chunk.toString()
+          if (buf.includes('\r\n\r\n')) {
+            const ok = /HTTP\/1\.[01] 200/.test(buf)
+            socket.destroy()
+            resolve({ ok, msg: ok ? '连接成功' : `代理拒绝：${buf.split('\r\n')[0]}` })
+          }
+        })
+        socket.on('timeout', () => { socket.destroy(); resolve({ ok: false, msg: '连接超时' }) })
+        socket.on('error', e => resolve({ ok: false, msg: e.message }))
+      })
+    }
+
+    if (type === 'socks5') {
+      // SOCKS5 握手测试
+      return new Promise((resolve) => {
+        const socket = net.createConnection({ host, port: Number(port) }, () => {
+          // 发送握手：支持无认证(0x00)和用户名密码(0x02)
+          const authMethod = user ? 0x02 : 0x00
+          socket.write(Buffer.from([0x05, 0x01, authMethod]))
+        })
+        socket.setTimeout(TIMEOUT)
+        let step = 0
+        socket.on('data', chunk => {
+          if (step === 0) {
+            // 服务器选择认证方式
+            if (chunk[0] !== 0x05) { socket.destroy(); return resolve({ ok: false, msg: 'SOCKS5协议错误' }) }
+            const method = chunk[1]
+            if (method === 0xFF) { socket.destroy(); return resolve({ ok: false, msg: '代理不接受认证方式' }) }
+            step = 1
+            if (method === 0x02 && user) {
+              // 用户名密码认证
+              const u = Buffer.from(user), p = Buffer.from(pass || '')
+              socket.write(Buffer.concat([Buffer.from([0x01, u.length]), u, Buffer.from([p.length]), p]))
+            } else {
+              // 发送 CONNECT 请求
+              const host_buf = Buffer.from(TARGET_HOST)
+              socket.write(Buffer.concat([
+                Buffer.from([0x05, 0x01, 0x00, 0x03, host_buf.length]),
+                host_buf,
+                Buffer.from([TARGET_PORT >> 8, TARGET_PORT & 0xFF])
+              ]))
+              step = 2
+            }
+          } else if (step === 1) {
+            // 认证响应
+            if (chunk[1] !== 0x00) { socket.destroy(); return resolve({ ok: false, msg: '用户名或密码错误' }) }
+            const host_buf = Buffer.from(TARGET_HOST)
+            socket.write(Buffer.concat([
+              Buffer.from([0x05, 0x01, 0x00, 0x03, host_buf.length]),
+              host_buf,
+              Buffer.from([TARGET_PORT >> 8, TARGET_PORT & 0xFF])
+            ]))
+            step = 2
+          } else if (step === 2) {
+            // CONNECT 响应
+            const ok = chunk[1] === 0x00
+            socket.destroy()
+            resolve({ ok, msg: ok ? '连接成功' : `SOCKS5错误码: 0x${chunk[1].toString(16)}` })
+          }
+        })
+        socket.on('timeout', () => { socket.destroy(); resolve({ ok: false, msg: '连接超时' }) })
+        socket.on('error', e => resolve({ ok: false, msg: e.message }))
+      })
+    }
+
+    return { ok: false, msg: '不支持的代理类型' }
+  })
 }
 
 // ─── 工具函数 ─────────────────────────────────────────────────────────────────
