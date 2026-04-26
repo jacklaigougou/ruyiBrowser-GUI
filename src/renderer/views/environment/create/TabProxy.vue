@@ -1,5 +1,18 @@
 <template>
   <div>
+    <!-- 测试结果弹窗 -->
+    <div v-if="testResult" class="modal" @click.self="testResult = null">
+      <div class="modal-box" style="width:340px">
+        <h2 :style="{ color: testResult.ok ? 'var(--success)' : 'var(--danger)' }">
+          {{ testResult.ok ? '连接成功' : '连接失败' }}
+        </h2>
+        <p style="font-size:13px;color:var(--text-secondary)">{{ testResult.msg }}</p>
+        <div class="modal-actions">
+          <button class="btn btn--primary" @click="testResult = null">确定</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 代理设置 -->
     <div class="form-card">
       <div class="card-collapse-header" @click="collapseProxy = !collapseProxy">
@@ -51,9 +64,6 @@
                 <button class="btn" :disabled="testing" @click="testProxy" style="flex-shrink:0">
                   {{ testing ? '测试中…' : '测试连通' }}
                 </button>
-                <span v-if="testResult" :style="{ fontSize: '12px', whiteSpace: 'nowrap', color: testResult.ok ? 'var(--success)' : 'var(--danger)' }">
-                  {{ testResult.msg }}
-                </span>
               </div>
             </div>
           </div>
