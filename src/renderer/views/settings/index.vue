@@ -1,6 +1,8 @@
 <template>
-  <div>
-    <h1>设置</h1>
+  <div class="page-card">
+    <div class="page-header">
+      <span class="page-title">服务配置</span>
+    </div>
     <div class="settings-form">
       <label>Python服务地址
         <input v-model="baseUrl" type="text" />
@@ -8,7 +10,9 @@
       <label>请求超时 (ms)
         <input v-model.number="timeout" type="number" />
       </label>
-      <button class="btn btn--primary" @click="save">保存</button>
+      <div style="display:flex;justify-content:flex-end">
+        <button class="btn btn--primary" @click="save">保存</button>
+      </div>
       <div v-if="result" class="op-result" :class="status">{{ result }}</div>
     </div>
   </div>

@@ -1,16 +1,16 @@
 <template>
-  <div>
-    <h1>浏览器操作</h1>
-    <div class="toolbar">
-      <label>当前会话
-        <select v-model="sessionId" @click="refreshSessions">
-          <option value="">-- 选择会话 --</option>
+  <div class="page-card">
+    <div class="page-header">
+      <span class="page-title">浏览器操作</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select v-model="sessionId" style="width:260px" @click="refreshSessions">
+          <option value="">— 选择会话 —</option>
           <option v-for="s in sessions" :key="s.sessionId" :value="s.sessionId">
             {{ s.sessionId.slice(0, 8) }}… {{ s.title || s.url || '' }}
           </option>
         </select>
-      </label>
-      <button class="btn" @click="refreshSessions">刷新会话</button>
+        <button class="btn" @click="refreshSessions">刷新</button>
+      </div>
     </div>
 
     <div class="ops-grid">
@@ -24,7 +24,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, provide } from 'vue'
+import { ref, onMounted } from 'vue'
 import NavPanel from './NavPanel.vue'
 import ElementPanel from './ElementPanel.vue'
 import ScriptPanel from './ScriptPanel.vue'

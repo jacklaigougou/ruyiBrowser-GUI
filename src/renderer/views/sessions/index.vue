@@ -1,20 +1,35 @@
 <template>
-  <div>
-    <h1>会话管理</h1>
-    <div class="toolbar">
-      <button class="btn btn--primary" @click="showLaunch = true">启动新浏览器</button>
-      <button class="btn" @click="load">刷新</button>
+  <div class="page-card">
+    <div class="page-header">
+      <span class="page-title">会话管理</span>
+      <button class="btn btn--primary" @click="showLaunch = true">+ 启动浏览器</button>
     </div>
 
-    <div class="sessions-list">
-      <div v-if="sessions.length === 0" class="empty-tip">暂无活跃会话</div>
-      <div v-for="s in sessions" :key="s.sessionId" class="session-item">
-        <span class="session-id">{{ s.sessionId }}</span>
-        <span class="session-url">{{ s.url || '—' }}</span>
-        <span class="session-meta">{{ s.title || '—' }}</span>
-        <button class="btn btn--danger" @click="close(s.sessionId)">关闭</button>
-      </div>
-    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>会话ID</th>
+          <th>当前URL</th>
+          <th>页面标题</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-if="sessions.length === 0">
+          <td colspan="4" class="empty-tip">暂无活跃会话</td>
+        </tr>
+        <tr v-for="s in sessions" :key="s.sessionId">
+          <td style="font-family:monospace;font-size:12px;color:var(--text-muted)">{{ s.sessionId }}</td>
+          <td>{{ s.url || '—' }}</td>
+          <td>{{ s.title || '—' }}</td>
+          <td>
+            <div class="table-actions">
+              <button class="btn btn--danger btn--text" @click="close(s.sessionId)">关闭</button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
 
     <LaunchModal v-if="showLaunch" @close="showLaunch = false" @launched="load" />
   </div>

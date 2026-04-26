@@ -1,9 +1,9 @@
 <template>
   <div class="layout">
     <AppSidebar />
-    <main class="main">
+    <div class="main-content">
       <slot />
-    </main>
+    </div>
   </div>
 </template>
 
