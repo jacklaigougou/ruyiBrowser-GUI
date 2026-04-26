@@ -35,7 +35,9 @@ contextBridge.exposeInMainWorld('ruyi', {
 
   // 环境数据库 CRUD
   dbListEnvs: () => ipcRenderer.invoke('ruyi:db-list-envs'),
+  dbGetEnv: (id) => ipcRenderer.invoke('ruyi:db-get-env', id),
   dbCreateEnv: (env) => ipcRenderer.invoke('ruyi:db-create-env', env),
+  dbUpdateEnv: (id, env) => ipcRenderer.invoke('ruyi:db-update-env', { id, env }),
   dbDeleteEnv: (id) => ipcRenderer.invoke('ruyi:db-delete-env', id),
 
   // foxprint.exe 下载

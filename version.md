@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### v0.4.4 — feat: 环境修改功能
+
+- `src/main/main.js`：新增 `ruyi:db-get-env`（按 id 查单条）和 `ruyi:db-update-env`（UPDATE 全字段）IPC handler
+- `src/preload/preload.js`：暴露 `dbGetEnv(id)`、`dbUpdateEnv(id, env)`
+- `src/renderer/main.js`：新增路由 `/environment/edit/:id`，复用 create 页面
+- `create/index.vue`：
+  - 路由参数 `id` 存在时进入编辑模式，标题改为「修改环境」
+  - `onMounted` 通过 `dbGetEnv` 加载 DB 行，将所有 snake_case 字段回填到 camelCase form（含时区/语言模式推断）
+  - `save()` 区分新建（dbCreateEnv）和编辑（dbUpdateEnv）
+- `environment/index.vue`：操作列新增「修改」按钮，点击跳转 `/environment/edit/:id`
+
 ### v0.4.3 — feat: 预览弹窗增强、复制按钮、代理地址端口分类、WebRTC IP修正
 
 - `index.vue`：

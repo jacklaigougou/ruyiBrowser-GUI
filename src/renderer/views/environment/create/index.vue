@@ -29,7 +29,7 @@
         <button class="btn-back" @click="$router.back()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
-        <span class="create-title">新建环境</span>
+        <span class="create-title">{{ pageTitle }}</span>
       </div>
       <div style="display:flex;gap:8px">
         <button class="btn" @click="$router.back()">取消</button>
@@ -79,8 +79,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { addLog } from '../../../composables/useLogs'
 import SummaryRow from './SummaryRow.vue'
 import TabBasic from './TabBasic.vue'
@@ -89,6 +89,9 @@ import TabFingerprint from './TabFingerprint.vue'
 import TabAdvanced from './TabAdvanced.vue'
 
 const router = useRouter()
+const route = useRoute()
+const editId = route.params.id ? Number(route.params.id) : null
+const pageTitle = editId ? '修改环境' : '新建环境'
 const fpfileLines = ref(null)
 const previewFilter = ref('all')
 
@@ -260,16 +263,85 @@ async function copyPreview() {
   }
 }
 
+onMounted(async () => {
+  if (!editId) return
+  const row = await window.ruyi.dbGetEnv(editId)
+  if (!row) return
+  // 回填代理
+  form.value.proxyType = row.proxy_type || 'none'
+  form.value.proxyHost = row.proxy_host || ''
+  form.value.proxyPort = row.proxy_port || ''
+  form.value.proxyUser = row.proxy_user || ''
+  form.value.proxyPass = row.proxy_pass || ''
+  // 回填 WebRTC
+  form.value.webrtcMode = row.webrtc_mode || 'disabled'
+  form.value.localIpv4  = row.local_ipv4 || ''
+  form.value.localIpv6  = row.local_ipv6 || ''
+  form.value.publicIpv4 = row.public_ipv4 || ''
+  form.value.publicIpv6 = row.public_ipv6 || ''
+  // 回填时区
+  const tz = row.timezone || ''
+  if (tz === 'ip' || tz === 'real') {
+    form.value.timezoneMode = tz
+  } else if (tz) {
+    form.value.timezoneMode = 'custom'
+    form.value.timezone = tz
+  }
+  // 回填语言
+  const lang = row.language || ''
+  if (lang === 'ip') {
+    form.value.languageMode = 'ip'
+  } else if (lang) {
+    form.value.languageMode = 'custom'
+    form.value.language = lang
+  }
+  // 回填基础
+  form.value.name       = row.name || ''
+  form.value.remark     = row.remark || ''
+  form.value.fontSystem = row.font_system || 'windows'
+  form.value.userAgent  = row.user_agent || ''
+  form.value.canvasSeed = row.canvas_seed ?? null
+  // 回填 WebGL
+  form.value.webglVendor            = row.webgl_vendor || ''
+  form.value.webglRenderer          = row.webgl_renderer || ''
+  form.value.webglVersion           = row.webgl_version || ''
+  form.value.webglGlslVersion       = row.webgl_glsl_version || ''
+  form.value.webglUnmaskedVendor    = row.webgl_unmasked_vendor || ''
+  form.value.webglUnmaskedRenderer  = row.webgl_unmasked_renderer || ''
+  form.value.webglMaxTexture            = row.webgl_max_texture ?? null
+  form.value.webglMaxCubeMapTextureSize = row.webgl_max_cube_map ?? null
+  form.value.webglMaxTextureImageUnits  = row.webgl_max_texture_units ?? null
+  form.value.webglMaxVertexAttribs      = row.webgl_max_vertex_attribs ?? null
+  form.value.webglAliasedPointSizeMax   = row.webgl_aliased_point_max ?? null
+  form.value.webglMaxViewportDim        = row.webgl_max_viewport_dim ?? null
+  // 回填硬件
+  form.value.cpuCores  = row.cpu_cores ?? null
+  form.value.screenW   = row.screen_w ?? null
+  form.value.screenH   = row.screen_h ?? null
+  form.value.webdriver = row.webdriver || '0'
+})
+
 async function save() {
   if (!form.value.name.trim()) { activeTab.value = 'basic'; return alert('请填写环境名称') }
 
   const env = buildEnv()
-  const result = await window.ruyi.dbCreateEnv(env)
-  if (result.ok) {
-    addLog(`环境已创建: ${form.value.name}`, 'ok')
-    router.push('/environment')
+  let result
+  if (editId) {
+    result = await window.ruyi.dbUpdateEnv(editId, env)
+    if (result.ok) {
+      addLog(`环境已更新: ${form.value.name}`, 'ok')
+      router.push('/environment')
+    } else {
+      alert('保存失败')
+    }
   } else {
-    alert('保存失败')
+    result = await window.ruyi.dbCreateEnv(env)
+    if (result.ok) {
+      addLog(`环境已创建: ${form.value.name}`, 'ok')
+      router.push('/environment')
+    } else {
+      alert('保存失败')
+    }
   }
 }
 </script>

@@ -61,6 +61,27 @@ function initDatabase() {
       created_at  TEXT NOT NULL DEFAULT (datetime('now','localtime'))
     )
   `)
+
+  // 兼容旧版本数据库：CREATE TABLE IF NOT EXISTS 不会给已有表补新列
+  const requiredColumns = {
+    webgl_version: 'TEXT DEFAULT \'\'',
+    webgl_glsl_version: 'TEXT DEFAULT \'\'',
+    webgl_max_cube_map: 'INTEGER',
+    webgl_max_texture_units: 'INTEGER',
+    webgl_max_vertex_attribs: 'INTEGER',
+    webgl_aliased_point_max: 'INTEGER',
+    webgl_max_viewport_dim: 'INTEGER',
+  }
+
+  const existingCols = new Set(
+    db.prepare('PRAGMA table_info(environments)').all().map(col => col.name)
+  )
+
+  for (const [name, ddl] of Object.entries(requiredColumns)) {
+    if (!existingCols.has(name)) {
+      db.exec(`ALTER TABLE environments ADD COLUMN ${name} ${ddl}`)
+    }
+  }
 }
 
 // ─── Python 服务生命周期 ───────────────────────────────────────────────────────
@@ -272,6 +293,32 @@ function registerIpcHandlers() {
     return db.prepare('SELECT * FROM environments ORDER BY id DESC').all()
   })
 
+  ipcMain.handle('ruyi:db-get-env', (_event, id) => {
+    return db.prepare('SELECT * FROM environments WHERE id = ?').get(id) || null
+  })
+
+  ipcMain.handle('ruyi:db-update-env', (_event, { id, env }) => {
+    db.prepare(`
+      UPDATE environments SET
+        name=@name, remark=@remark,
+        proxy_type=@proxyType, proxy_host=@proxyHost, proxy_port=@proxyPort,
+        proxy_user=@proxyUser, proxy_pass=@proxyPass,
+        webrtc_mode=@webrtcMode, local_ipv4=@localIpv4, local_ipv6=@localIpv6,
+        public_ipv4=@publicIpv4, public_ipv6=@publicIpv6,
+        timezone=@timezone, language=@language, font_system=@fontSystem,
+        user_agent=@userAgent, canvas_seed=@canvasSeed,
+        webgl_vendor=@webglVendor, webgl_renderer=@webglRenderer,
+        webgl_version=@webglVersion, webgl_glsl_version=@webglGlslVersion,
+        webgl_unmasked_vendor=@webglUnmaskedVendor, webgl_unmasked_renderer=@webglUnmaskedRenderer,
+        webgl_max_texture=@webglMaxTexture, webgl_max_cube_map=@webglMaxCubeMapTextureSize,
+        webgl_max_texture_units=@webglMaxTextureImageUnits, webgl_max_vertex_attribs=@webglMaxVertexAttribs,
+        webgl_aliased_point_max=@webglAliasedPointSizeMax, webgl_max_viewport_dim=@webglMaxViewportDim,
+        cpu_cores=@cpuCores, screen_w=@screenW, screen_h=@screenH, webdriver=@webdriver
+      WHERE id=@id
+    `).run({ ...env, id })
+    return { ok: true }
+  })
+
   ipcMain.handle('ruyi:db-create-env', (_event, env) => {
     const stmt = db.prepare(`
       INSERT INTO environments (
@@ -376,7 +423,10 @@ function registerIpcHandlers() {
       proxy_user:             env.proxyUser,
       proxy_pass:             env.proxyPass,
       webrtc_mode:            env.webrtcMode,
+      local_ipv4:             env.localIpv4,
+      local_ipv6:             env.localIpv6,
       public_ipv4:            env.publicIpv4,
+      public_ipv6:            env.publicIpv6,
     }
     return buildFpfileLines(row).join('\n')
   })
@@ -489,8 +539,8 @@ function buildFpfileLines(env) {
   const add = (key, val) => { if (val !== null && val !== undefined && val !== '') lines.push(`${key}:${val}`) }
   add('timezone', env.timezone)
   add('language', env.language)
-  add('fontSystem', env.font_system)
-  add('userAgent', env.user_agent)
+  add('font_system', env.font_system)
+  add('useragent', env.user_agent)
   add('canvas', env.canvas_seed)
   add('webgl.vendor', env.webgl_vendor)
   add('webgl.renderer', env.webgl_renderer)
@@ -514,7 +564,6 @@ function buildFpfileLines(env) {
     add('httpauth.username', env.proxy_user)
     add('httpauth.password', env.proxy_pass)
   }
-
   // speech 语音配置：从 language 字段提取主语言代码（如 zh-CN,zh → zh-CN）
   if (env.language && env.language !== 'ip' && env.language !== 'real') {
     const primaryLang = env.language.split(',')[0].trim()
@@ -526,15 +575,11 @@ function buildFpfileLines(env) {
 
   if (env.webrtc_mode === 'disabled') {
     lines.push('webrtcPolicy:disable_non_proxied_udp')
-    lines.push('webdriver:0')
-  } else if (env.webrtc_mode === 'real') {
-    lines.push('webdriver:1')
   } else if (env.webrtc_mode === 'proxy') {
-    const ip = env.public_ipv4
-    if (ip) {
-      add('webrtcLocalIp4',  ip)
-      add('webrtcPublicIp4', ip)
-    }
+    add('local_webrtc_ipv4', env.local_ipv4 || env.public_ipv4)
+    add('local_webrtc_ipv6', env.local_ipv6)
+    add('public_webrtc_ipv4', env.public_ipv4 || env.local_ipv4)
+    add('public_webrtc_ipv6', env.public_ipv6)
   }
   return lines
 }

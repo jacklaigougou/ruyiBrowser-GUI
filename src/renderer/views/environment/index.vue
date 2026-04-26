@@ -32,6 +32,7 @@
           <td>
             <div class="table-actions">
               <button class="btn btn--text" @click="launch(env)">启动</button>
+              <button class="btn btn--text" @click="router.push(`/environment/edit/${env.id}`)">修改</button>
               <button class="btn btn--danger btn--text" @click="del(env.id)">删除</button>
             </div>
           </td>
@@ -43,7 +44,10 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { addLog } from '../../composables/useLogs'
+
+const router = useRouter()
 
 const envList = ref([])
 
