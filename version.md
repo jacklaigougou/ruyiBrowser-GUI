@@ -2,6 +2,27 @@
 
 ## [Unreleased]
 
+### v0.3.2 — feat: IP 查询、ComboInput 组件、布局修复、样式优化
+
+- `src/main/http/ipQuery.js`：新增文件，封装 `ip-api.com` 免费 IP 地理信息查询
+- `src/main/main.js`：注册 `ruyi:query-ip` IPC handler；引入 `./http/ipQuery`
+- `src/preload/preload.js`：暴露 `window.ruyi.queryIp(ip)`
+- `src/renderer/components/ComboInput.vue`：新增可输入+可下拉组合框组件，支持字符串/对象选项、模糊过滤、点击外部关闭
+- `TabFingerprint.vue`：
+  - 卡片右上角加「查询 IP」按钮，点击后自动填入时区、语言、地理位置
+  - 时区/语言输入框改为 `ComboInput`，支持预设下拉
+  - 删除「界面语言」字段（fpfile 只支持单一 language 字段）
+  - 删除地理位置「每次询问」toggle
+  - 分辨率、字体移入第二张卡片（与 UA/WebGL 同卡）
+  - 语言预设格式符合 fpfile 规范（如 `zh-CN,zh`）
+- `style.css`：
+  - `.create-form` 加 `min-width: 0`，修复概要面板被挤出可视区域的布局 bug
+  - `.main-content:has(.create-page)` 加 `height: 100%; display: flex; flex-direction: column`
+  - `.create-page` 改为 `flex: 1; min-height: 0`
+  - `.tab-opt` 改为独立圆角（后调整为小圆角）pill 风格，选中态浅蓝底+蓝字
+  - 新增 `.combo-wrap / .combo-input-row / .combo-arrow / .combo-dropdown` 样式
+  - 新增 `.card-toolbar` 卡片右上角工具栏样式
+
 ### v0.3.1 — ui: card layout polish + label/WebRTC fixes
 - `TabBasic.vue`：三字段合并为一张卡片；「fox浏览器」标签改为「浏览器」；移除字数计数显示
 - `TabProxy.vue`：WebRTC 移回代理信息 Tab，改为4个可填写 IP 输入框（本地/公网 IPv4/IPv6）；代理字段与 WebRTC 字段分两张卡片

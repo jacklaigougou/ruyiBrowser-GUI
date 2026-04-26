@@ -43,27 +43,16 @@
     <!-- WebRTC -->
     <div class="form-card">
       <div class="field-row">
-        <span class="field-label">本地 IPv4</span>
+        <span class="field-label">WebRTC</span>
         <div class="field-control">
-          <input v-model="form.localIpv4" type="text" class="field-input" placeholder="192.168.1.100" />
-        </div>
-      </div>
-      <div class="field-row">
-        <span class="field-label">本地 IPv6</span>
-        <div class="field-control">
-          <input v-model="form.localIpv6" type="text" class="field-input" placeholder="可选" />
-        </div>
-      </div>
-      <div class="field-row">
-        <span class="field-label">公网 IPv4</span>
-        <div class="field-control">
-          <input v-model="form.publicIpv4" type="text" class="field-input" placeholder="与代理出口一致" />
-        </div>
-      </div>
-      <div class="field-row">
-        <span class="field-label">公网 IPv6</span>
-        <div class="field-control">
-          <input v-model="form.publicIpv6" type="text" class="field-input" placeholder="可选" />
+          <select v-model="form.webrtcMode" class="field-input">
+            <option value="disabled">禁用</option>
+            <option value="real">真实</option>
+            <option value="proxy">使用代理</option>
+          </select>
+          <span v-if="form.webrtcMode === 'proxy'" style="font-size:12px;color:var(--text-muted);margin-top:6px;display:block">
+            将自动使用代理 IP 配置 WebRTC 公网地址
+          </span>
         </div>
       </div>
     </div>

@@ -2,6 +2,15 @@
   <div>
     <!-- 时区 / 地理位置 / 语言 / 界面语言 -->
     <div class="form-card">
+      <!-- 卡片右上角查询按钮 -->
+      <div class="card-toolbar">
+        <button class="btn" :disabled="querying" @click="queryIpInfo">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          {{ querying ? '查询中…' : '查询 IP' }}
+        </button>
+        <span v-if="queryError" style="font-size:12px;color:var(--danger)">{{ queryError }}</span>
+      </div>
+
       <div class="field-row">
         <span class="field-label">时区</span>
         <div class="field-control">
@@ -10,8 +19,8 @@
               :class="{ active: form.timezoneMode === opt.value }"
               @click="form.timezoneMode = opt.value">{{ opt.label }}</button>
           </div>
-          <input v-if="form.timezoneMode === 'custom'" v-model="form.timezone"
-            type="text" class="field-input" style="margin-top:8px" placeholder="Asia/Shanghai" />
+          <ComboInput v-if="form.timezoneMode === 'custom'" v-model="form.timezone"
+            :options="tzPresets" placeholder="Asia/Shanghai" />
         </div>
       </div>
 
@@ -29,22 +38,6 @@
               <input v-model="form.geoLon" type="text" class="field-input" placeholder="经度 121.4737" />
             </div>
           </template>
-          <div v-if="form.geoMode !== 'disabled'" style="display:flex;gap:16px;margin-top:8px">
-            <label class="toggle-wrap">
-              <span class="toggle">
-                <input type="checkbox" :checked="form.geoPermission === 'ask'" @change="form.geoPermission = $event.target.checked ? 'ask' : 'allow'" />
-                <span class="toggle-slider"></span>
-              </span>
-              每次询问
-            </label>
-            <label class="toggle-wrap">
-              <span class="toggle">
-                <input type="checkbox" :checked="form.geoPermission === 'allow'" @change="form.geoPermission = $event.target.checked ? 'allow' : 'ask'" />
-                <span class="toggle-slider"></span>
-              </span>
-              始终允许
-            </label>
-          </div>
         </div>
       </div>
 
@@ -56,24 +49,26 @@
               :class="{ active: form.languageMode === opt.value }"
               @click="form.languageMode = opt.value">{{ opt.label }}</button>
           </div>
-          <input v-if="form.languageMode === 'custom'" v-model="form.language"
-            type="text" class="field-input" style="margin-top:8px" placeholder="zh-CN,zh" />
+          <template v-if="form.languageMode === 'custom'">
+            <ComboInput v-model="form.language" :options="langPresets" placeholder="zh-CN,zh" />
+          </template>
         </div>
       </div>
 
+    </div>
+
+    <!-- User-Agent / Canvas / WebGL / 分辨率 / 字体 -->
+    <div class="form-card">
       <div class="field-row">
-        <span class="field-label">界面语言</span>
+        <span class="field-label">User-Agent</span>
         <div class="field-control">
-          <div class="tab-group">
-            <button v-for="opt in uiLangOpts" :key="opt.value" class="tab-opt"
-              :class="{ active: form.uiLangMode === opt.value }"
-              @click="form.uiLangMode = opt.value">{{ opt.label }}</button>
-          </div>
-          <input v-if="form.uiLangMode === 'custom'" v-model="form.uiLang"
-            type="text" class="field-input" style="margin-top:8px" placeholder="zh-CN" />
+          <input v-model="form.userAgent" type="text" class="field-input"
+            list="ua-list" placeholder="留空使用浏览器默认" />
+          <datalist id="ua-list">
+            <option v-for="ua in uaPresets" :key="ua" :value="ua" />
+          </datalist>
         </div>
       </div>
-
       <div class="field-row">
         <span class="field-label">分辨率</span>
         <div class="field-control">
@@ -100,7 +95,6 @@
           </template>
         </div>
       </div>
-
       <div class="field-row">
         <span class="field-label">字体</span>
         <div class="field-control">
@@ -115,16 +109,6 @@
           </select>
         </div>
       </div>
-    </div>
-
-    <!-- User-Agent / Canvas / WebGL -->
-    <div class="form-card">
-      <div class="field-row">
-        <span class="field-label">User-Agent</span>
-        <div class="field-control">
-          <input v-model="form.userAgent" type="text" class="field-input" placeholder="留空使用浏览器默认" />
-        </div>
-      </div>
       <div class="field-row">
         <span class="field-label">Canvas 种子</span>
         <div class="field-control">
@@ -134,31 +118,55 @@
       <div class="field-row">
         <span class="field-label">WebGL Vendor</span>
         <div class="field-control">
-          <input v-model="form.webglVendor" type="text" class="field-input" placeholder="Intel Inc." />
+          <input v-model="form.webglVendor" type="text" class="field-input"
+            list="webgl-vendor-list" placeholder="Intel Inc." />
+          <datalist id="webgl-vendor-list">
+            <option value="Intel Inc." />
+            <option value="NVIDIA Corporation" />
+            <option value="AMD" />
+            <option value="Apple Inc." />
+            <option value="Google Inc." />
+          </datalist>
         </div>
       </div>
       <div class="field-row">
         <span class="field-label">WebGL Renderer</span>
         <div class="field-control">
-          <input v-model="form.webglRenderer" type="text" class="field-input" placeholder="Intel Iris OpenGL Engine" />
+          <input v-model="form.webglRenderer" type="text" class="field-input"
+            list="webgl-renderer-list" placeholder="Intel Iris OpenGL Engine" />
+          <datalist id="webgl-renderer-list">
+            <option value="Intel Iris OpenGL Engine" />
+            <option value="Intel(R) UHD Graphics 620" />
+            <option value="ANGLE (NVIDIA GeForce GTX 1060)" />
+            <option value="ANGLE (AMD Radeon RX 580)" />
+            <option value="Apple M1" />
+          </datalist>
         </div>
       </div>
       <div class="field-row">
         <span class="field-label">Unmasked Vendor</span>
         <div class="field-control">
-          <input v-model="form.webglUnmaskedVendor" type="text" class="field-input" placeholder="Intel Inc." />
+          <input v-model="form.webglUnmaskedVendor" type="text" class="field-input"
+            list="webgl-vendor-list" placeholder="Intel Inc." />
         </div>
       </div>
       <div class="field-row">
         <span class="field-label">Unmasked Renderer</span>
         <div class="field-control">
-          <input v-model="form.webglUnmaskedRenderer" type="text" class="field-input" placeholder="ANGLE ..." />
+          <input v-model="form.webglUnmaskedRenderer" type="text" class="field-input"
+            list="webgl-renderer-list" placeholder="ANGLE ..." />
         </div>
       </div>
       <div class="field-row">
         <span class="field-label">最大纹理尺寸</span>
         <div class="field-control">
-          <input v-model.number="form.webglMaxTexture" type="number" class="field-input" placeholder="16384" />
+          <input v-model.number="form.webglMaxTexture" type="number" class="field-input"
+            list="texture-list" placeholder="16384" />
+          <datalist id="texture-list">
+            <option value="8192" />
+            <option value="16384" />
+            <option value="32768" />
+          </datalist>
         </div>
       </div>
     </div>
@@ -201,12 +209,52 @@
 </template>
 
 <script setup>
-defineProps({ form: Object })
+import { ref } from 'vue'
+import ComboInput from '../../../components/ComboInput.vue'
+
+const props = defineProps({ form: Object })
+
+const querying = ref(false)
+const queryError = ref('')
+
+async function queryIpInfo() {
+  querying.value = true
+  queryError.value = ''
+  try {
+    const result = await window.ruyi.queryIp()
+    if (result.timezone) {
+      props.form.timezoneMode = 'custom'
+      props.form.timezone = result.timezone
+    }
+    if (result.countryCode) {
+      const langMap = { CN: 'zh-CN', US: 'en-US', JP: 'ja-JP', KR: 'ko-KR', TW: 'zh-TW', HK: 'zh-HK' }
+      const lang = langMap[result.countryCode] || result.countryCode.toLowerCase()
+      props.form.languageMode = 'custom'
+      props.form.language = lang
+    }
+    if (result.lat && result.lon) {
+      props.form.geoMode = 'custom'
+      props.form.geoLat = String(result.lat)
+      props.form.geoLon = String(result.lon)
+    }
+  } catch (e) {
+    queryError.value = e.message || '查询失败'
+  } finally {
+    querying.value = false
+  }
+}
 
 const tzOpts = [
   { value: 'ip',     label: '基于 IP' },
   { value: 'real',   label: '真实' },
   { value: 'custom', label: '自定义' },
+]
+
+const tzPresets = [
+  'Asia/Shanghai', 'Asia/Tokyo', 'Asia/Seoul', 'Asia/Singapore',
+  'Asia/Hong_Kong', 'Asia/Taipei', 'Europe/London', 'Europe/Paris',
+  'Europe/Berlin', 'America/New_York', 'America/Los_Angeles',
+  'America/Chicago', 'Australia/Sydney', 'Pacific/Auckland',
 ]
 
 const geoOpts = [
@@ -220,15 +268,31 @@ const langOpts = [
   { value: 'custom', label: '自定义' },
 ]
 
-const uiLangOpts = [
-  { value: 'language', label: '基于语言' },
-  { value: 'real',     label: '真实' },
-  { value: 'custom',   label: '自定义' },
+const langPresets = [
+  { value: 'zh-CN,zh', label: 'zh-CN,zh（中文简体）' },
+  { value: 'zh-TW,zh', label: 'zh-TW,zh（中文繁体）' },
+  { value: 'zh-HK,zh', label: 'zh-HK,zh（中文香港）' },
+  { value: 'en-US,en', label: 'en-US,en（英语-美国）' },
+  { value: 'en-GB,en', label: 'en-GB,en（英语-英国）' },
+  { value: 'ja-JP,ja', label: 'ja-JP,ja（日语）' },
+  { value: 'ko-KR,ko', label: 'ko-KR,ko（韩语）' },
+  { value: 'fr-FR,fr', label: 'fr-FR,fr（法语）' },
+  { value: 'de-DE,de', label: 'de-DE,de（德语）' },
+  { value: 'es-ES,es', label: 'es-ES,es（西班牙语）' },
+  { value: 'pt-BR,pt', label: 'pt-BR,pt（葡萄牙语-巴西）' },
+  { value: 'ru-RU,ru', label: 'ru-RU,ru（俄语）' },
 ]
 
 const resolutionModeOpts = [
   { value: 'random', label: '随机' },
   { value: 'preset', label: '预定义' },
   { value: 'custom', label: '自定义' },
+]
+
+const uaPresets = [
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0',
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 14.4; rv:124.0) Gecko/20100101 Firefox/124.0',
+  'Mozilla/5.0 (X11; Linux x86_64; rv:124.0) Gecko/20100101 Firefox/124.0',
 ]
 </script>

@@ -48,5 +48,8 @@ contextBridge.exposeInMainWorld('ruyi', {
   offDownloadProgress: () => {
     ipcRenderer.removeAllListeners('ruyi:download-progress')
   },
+
+  // IP 地理信息查询
+  queryIp: (ip) => ipcRenderer.invoke('ruyi:query-ip', ip),
 })
 

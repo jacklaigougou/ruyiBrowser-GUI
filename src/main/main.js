@@ -5,6 +5,7 @@ const https = require('https')
 const http = require('http')
 const { spawn } = require('child_process')
 const pythonBridge = require('./python-bridge')
+const { queryIp } = require('./http/ipQuery')
 
 let mainWindow
 let pythonProcess = null
@@ -241,6 +242,11 @@ function registerIpcHandlers() {
     return pythonBridge.health()
   })
 
+  // 查询 IP 地理信息（时区/语言等）
+  ipcMain.handle('ruyi:query-ip', async (_event, ip) => {
+    return queryIp(ip || '')
+  })
+
   // 更新Python服务配置
   ipcMain.handle('ruyi:config', async (_event, config) => {
     pythonBridge.updateConfig(config)
@@ -363,11 +369,15 @@ function buildFpfileLines(env) {
   add('webdriver', env.webdriver)
   if (env.webrtc_mode === 'disabled') {
     lines.push('webrtcPolicy:disable_non_proxied_udp')
-  } else if (env.webrtc_mode === 'custom') {
-    add('webrtcLocalIp4', env.local_ipv4)
-    add('webrtcLocalIp6', env.local_ipv6)
-    add('webrtcPublicIp4', env.public_ipv4)
-    add('webrtcPublicIp6', env.public_ipv6)
+    lines.push('webdriver:0')
+  } else if (env.webrtc_mode === 'real') {
+    lines.push('webdriver:1')
+  } else if (env.webrtc_mode === 'proxy') {
+    const ip = env.public_ipv4
+    if (ip) {
+      add('webrtcLocalIp4',  ip)
+      add('webrtcPublicIp4', ip)
+    }
   }
   return lines
 }

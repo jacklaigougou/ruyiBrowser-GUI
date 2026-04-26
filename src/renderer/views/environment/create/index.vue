@@ -80,7 +80,7 @@ const form = ref({
   // 代理
   proxyType: 'none', proxyHost: '', proxyPort: '', proxyUser: '', proxyPass: '',
   // WebRTC（在代理信息 Tab）
-  localIpv4: '', localIpv6: '', publicIpv4: '', publicIpv6: '',
+  webrtcMode: 'disabled', localIpv4: '', localIpv6: '', publicIpv4: '', publicIpv6: '',
   // 时区
   timezoneMode: 'ip', timezone: '',
   // 地理位置
@@ -151,10 +151,10 @@ async function save() {
     proxyUser: form.value.proxyUser,
     proxyPass: form.value.proxyPass,
     webrtcMode: form.value.webrtcMode,
-    localIpv4: form.value.localIpv4,
-    localIpv6: form.value.localIpv6,
-    publicIpv4: form.value.publicIpv4,
-    publicIpv6: form.value.publicIpv6,
+    localIpv4:  form.value.webrtcMode === 'proxy' ? form.value.proxyHost : '',
+    localIpv6:  '',
+    publicIpv4: form.value.webrtcMode === 'proxy' ? form.value.proxyHost : '',
+    publicIpv6: '',
     timezone: form.value.timezoneMode === 'custom' ? form.value.timezone : form.value.timezoneMode,
     language: form.value.languageMode === 'custom' ? form.value.language : form.value.languageMode,
     fontSystem: form.value.fontMode === 'custom' ? form.value.fontSystem : '',
