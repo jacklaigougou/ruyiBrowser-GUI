@@ -55,7 +55,6 @@ function createWindow() {
 
   if (process.argv.includes('--dev')) {
     mainWindow.loadURL('http://localhost:5173')
-    mainWindow.webContents.openDevTools()
   }
 
   mainWindow.once('ready-to-show', () => {

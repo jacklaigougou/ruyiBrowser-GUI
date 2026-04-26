@@ -1,6 +1,14 @@
 <template>
   <aside class="sidebar">
-    <div class="sidebar-title">导航</div>
+    <div class="sidebar-title">
+      <span>导航</span>
+      <button class="devtools-btn" title="打开 DevTools" @click="openDevTools">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="16 18 22 12 16 6"/>
+          <polyline points="8 6 2 12 8 18"/>
+        </svg>
+      </button>
+    </div>
 
     <!-- 可折叠分组 -->
     <div v-for="group in navGroups" :key="group.label" class="nav-group">
@@ -23,10 +31,7 @@
 
     <div class="status-bar">
       <span class="dot" :class="online ? 'dot--on' : 'dot--off'"></span>
-      <span style="flex:1">{{ online ? 'Python服务已连接' : '服务未连接' }}</span>
-      <button class="devtools-btn" title="打开 DevTools" @click="window.ruyi.devtools()">
-        ⚙
-      </button>
+      <span>{{ online ? 'Python服务已连接' : '服务未连接' }}</span>
     </div>
   </aside>
 </template>
@@ -58,5 +63,9 @@ const navGroups = reactive([
 
 function toggle(group) {
   group.open = !group.open
+}
+
+function openDevTools() {
+  window.ruyi.devtools()
 }
 </script>
