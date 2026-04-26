@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### feat: redesign create-env page with tab layout + summary panel
+- `create/index.vue`：改为顶部 Tab 导航 + 左表单 + 右概要两栏布局
+  - Tab：基础设置 / 代理信息 / 指纹配置 / 高级设置
+  - 代理信息：代理类型切换 + WebRTC 三态选项组
+  - 右侧概要面板实时反映所有配置项
+- 新增 `create/SummaryRow.vue`：概要面板行组件
+- `style.css`：新增 tab-nav / field-row / summary-panel 等全套样式
+
 ### feat: environment create page with full fingerprint fields
 - 新增路由 `/environment/create`
 - 新增 `views/environment/create/index.vue`：独立新建环境页面（路由跳转，非 Modal）
