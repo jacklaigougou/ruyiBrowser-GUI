@@ -11,12 +11,14 @@
             <option value="webgl">WebGL</option>
             <option value="hardware">指纹与硬件</option>
             <option value="proxy">代理认证</option>
+            <option value="proxyNetwork">代理地址端口</option>
             <option value="speech">语音</option>
             <option value="webrtc">WebRTC</option>
           </select>
         </div>
         <pre style="font-size:12px;font-family:Consolas,monospace;background:#fafafa;border:1px solid var(--border);border-radius:var(--radius);padding:12px;overflow-y:auto;max-height:55vh;white-space:pre-wrap;word-break:break-all;color:var(--text)">{{ filteredPreview }}</pre>
         <div class="modal-actions">
+          <button class="btn" @click="copyPreview">复制</button>
           <button class="btn btn--primary" @click="fpfileLines = null">关闭</button>
         </div>
       </div>
@@ -91,12 +93,13 @@ const fpfileLines = ref(null)
 const previewFilter = ref('all')
 
 const FILTER_PREFIXES = {
-  region:   ['timezone:', 'language:'],
+  region:   ['timezone:', 'language:', 'speech.'],
   webgl:    ['webgl.'],
-  hardware: ['canvas:', 'hardwareConcurrency:', 'width:', 'height:', 'fontSystem:', 'userAgent:'],
+  hardware: ['canvas:', 'hardwareConcurrency:', 'width:', 'height:', 'font_system:', 'useragent:', 'webdriver:'],
   proxy:    ['httpauth.'],
+  proxyNetwork: ['user_pref("network.proxy.'],
   speech:   ['speech.'],
-  webrtc:   ['webrtcPolicy:', 'webrtcLocalIp4:', 'webrtcPublicIp4:', 'webdriver:'],
+  webrtc:   ['webrtcPolicy:', 'local_webrtc_ipv4:', 'local_webrtc_ipv6:', 'public_webrtc_ipv4:', 'public_webrtc_ipv6:', 'webdriver:'],
 }
 
 const filteredPreview = computed(() => {
@@ -122,7 +125,7 @@ const form = ref({
   // 代理
   proxyType: 'none', proxyHost: '', proxyPort: '', proxyUser: '', proxyPass: '',
   // WebRTC（在代理信息 Tab）
-  webrtcMode: 'disabled', localIpv4: '', localIpv6: '', publicIpv4: '', publicIpv6: '',
+  webrtcMode: 'proxy', localIpv4: '', localIpv6: '', publicIpv4: '', publicIpv6: '',
   // 时区
   timezoneMode: 'ip', timezone: '',
   // 地理位置
@@ -178,11 +181,13 @@ const resolutionLabel = computed(() => {
 function buildEnv() {
   let screenW = form.value.screenW
   let screenH = form.value.screenH
-  if (form.value.resolutionMode === 'random') { screenW = null; screenH = null }
   if (form.value.resolutionMode === 'preset' && form.value.resolutionPreset) {
     const [w, h] = form.value.resolutionPreset.split('x').map(Number)
     screenW = w; screenH = h
   }
+  const localIpv4 = form.value.localIpv4 || (form.value.webrtcMode === 'proxy' ? form.value.proxyHost : '')
+  const publicIpv4 = form.value.publicIpv4 || (form.value.webrtcMode === 'proxy' ? form.value.proxyHost : '')
+
   return {
     name: form.value.name,
     remark: form.value.remark,
@@ -192,10 +197,10 @@ function buildEnv() {
     proxyUser: form.value.proxyUser,
     proxyPass: form.value.proxyPass,
     webrtcMode: form.value.webrtcMode,
-    localIpv4:  form.value.webrtcMode === 'proxy' ? form.value.proxyHost : '',
-    localIpv6:  '',
-    publicIpv4: form.value.webrtcMode === 'proxy' ? form.value.proxyHost : '',
-    publicIpv6: '',
+    localIpv4,
+    localIpv6:  form.value.localIpv6 || '',
+    publicIpv4,
+    publicIpv6: form.value.publicIpv6 || '',
     timezone: form.value.timezoneMode === 'custom' ? form.value.timezone : form.value.timezoneMode,
     language: form.value.languageMode === 'custom' ? form.value.language : form.value.languageMode,
     fontSystem: form.value.fontSystem,
@@ -223,8 +228,36 @@ function buildEnv() {
 async function previewFpfile() {
   const env = buildEnv()
   const text = await window.ruyi.previewFpfile(env)
-  fpfileLines.value = text.split('\n').filter(l => l.trim())
+  const lines = text.split('\n').filter(l => l.trim())
+  if (env.proxyType !== 'none' && env.proxyHost && env.proxyPort) {
+    const proxyPort = Number(env.proxyPort)
+    if (Number.isFinite(proxyPort)) {
+      lines.push(`user_pref("network.proxy.http", "${env.proxyHost}");`)
+      lines.push(`user_pref("network.proxy.http_port", ${proxyPort});`)
+      lines.push(`user_pref("network.proxy.ssl", "${env.proxyHost}");`)
+      lines.push(`user_pref("network.proxy.ssl_port", ${proxyPort});`)
+    }
+  }
+  fpfileLines.value = lines
   previewFilter.value = 'all'
+}
+
+async function copyPreview() {
+  const text = filteredPreview.value || ''
+  if (!text) return
+  try {
+    await navigator.clipboard.writeText(text)
+  } catch (_) {
+    const textarea = document.createElement('textarea')
+    textarea.value = text
+    textarea.setAttribute('readonly', '')
+    textarea.style.position = 'absolute'
+    textarea.style.left = '-9999px'
+    document.body.appendChild(textarea)
+    textarea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textarea)
+  }
 }
 
 async function save() {

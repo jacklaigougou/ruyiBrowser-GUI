@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### v0.4.3 — feat: 预览弹窗增强、复制按钮、代理地址端口分类、WebRTC IP修正
+
+- `index.vue`：
+  - 预览弹窗新增「复制」按钮，复制当前过滤内容到剪贴板
+  - 新增「代理地址端口」分类，展示 `user_pref("network.proxy.xxx")` 格式行（预览时动态生成）
+  - WebRTC 默认模式改为 `proxy`
+  - `buildEnv()` 修正：localIpv4/publicIpv4 优先取表单手填值，再回退到代理 Host；IPv6 字段同步透传
+  - `buildEnv()` 移除 resolutionMode=random 时强制清空宽高的逻辑
+  - 过滤前缀调整：`region` 加入 `speech.`，`hardware` 键名修正为实际输出键，`webrtc` 前缀更新为实际 fpfile 键名
+
 ### v0.4.2 — fix: 预览分类过滤 webdriver 归类修正
 
 - `index.vue`：`webdriver:` 前缀从「指纹与硬件」分类移至「WebRTC」分类，修复「指纹与硬件」模式下仅显示 `webdriver:0` 的问题
