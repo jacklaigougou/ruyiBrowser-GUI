@@ -33,13 +33,65 @@ body {
 }
 
 /* ── Layout ── */
-.layout { display: flex; height: 100vh; }
+.layout { display: flex; flex-direction: column; height: 100vh; }
+
+.layout-body { display: flex; flex: 1; overflow: hidden; }
 
 .main-content {
   flex: 1;
   overflow-y: auto;
   padding: 20px;
   background: var(--bg);
+}
+
+/* ── Title bar ── */
+.titlebar {
+  height: 40px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  /* 允许拖动窗口 */
+  -webkit-app-region: drag;
+  flex-shrink: 0;
+  /* 为 Windows 原生控制按钮留出空间 (≈138px) */
+  padding-right: 150px;
+}
+
+.titlebar-title {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+  user-select: none;
+}
+
+.titlebar-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  /* 按钮本身不可拖动 */
+  -webkit-app-region: no-drag;
+}
+
+.titlebar-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: background .15s, color .15s, border-color .15s;
+}
+.titlebar-btn:hover {
+  background: var(--accent-light);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 /* ── Sidebar ── */

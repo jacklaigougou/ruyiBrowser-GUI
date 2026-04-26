@@ -49,6 +49,12 @@ function createWindow() {
     title: 'ruyiPage GUI',
     show: false,
     autoHideMenuBar: true,
+    titleBarStyle: 'hidden',
+    titleBarOverlay: {
+      color: '#ffffff',
+      symbolColor: '#606266',
+      height: 40,
+    },
   })
 
   mainWindow.loadFile(path.join(__dirname, '../../dist/renderer/index.html'))
