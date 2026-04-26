@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('ruyi', {
   // 服务状态
   health: () => ipcRenderer.invoke('ruyi:health'),
   config: (cfg) => ipcRenderer.invoke('ruyi:config', cfg),
+  devtools: () => ipcRenderer.invoke('ruyi:devtools'),
 
   // 会话管理
   launch: (options) => ipcRenderer.invoke('ruyi:launch', options),

@@ -346,6 +346,20 @@ textarea { resize: vertical; }
 /* ── Empty ── */
 .empty-tip { color: var(--text-muted); font-size: 13px; padding: 24px 0; text-align: center; }
 
+/* ── DevTools button ── */
+.devtools-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-muted);
+  padding: 2px 4px;
+  border-radius: 3px;
+  line-height: 1;
+  transition: color .15s, background .15s;
+}
+.devtools-btn:hover { color: var(--accent); background: var(--accent-light); }
+
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }

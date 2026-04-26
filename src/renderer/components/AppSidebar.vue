@@ -23,7 +23,10 @@
 
     <div class="status-bar">
       <span class="dot" :class="online ? 'dot--on' : 'dot--off'"></span>
-      <span>{{ online ? 'Python服务已连接' : '服务未连接' }}</span>
+      <span style="flex:1">{{ online ? 'Python服务已连接' : '服务未连接' }}</span>
+      <button class="devtools-btn" title="打开 DevTools" @click="window.ruyi.devtools()">
+        ⚙
+      </button>
     </div>
   </aside>
 </template>

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron')
+const { app, BrowserWindow, ipcMain, Menu } = require('electron')
 const path = require('path')
 const { spawn } = require('child_process')
 const pythonBridge = require('./python-bridge')
@@ -48,6 +48,7 @@ function createWindow() {
     },
     title: 'ruyiPage GUI',
     show: false,
+    autoHideMenuBar: true,
   })
 
   mainWindow.loadFile(path.join(__dirname, '../../dist/renderer/index.html'))
@@ -159,5 +160,10 @@ function registerIpcHandlers() {
   ipcMain.handle('ruyi:config', async (_event, config) => {
     pythonBridge.updateConfig(config)
     return { ok: true }
+  })
+
+  // 开关 DevTools
+  ipcMain.handle('ruyi:devtools', () => {
+    if (mainWindow) mainWindow.webContents.toggleDevTools()
   })
 }
