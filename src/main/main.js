@@ -1,8 +1,39 @@
 const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
+const { spawn } = require('child_process')
 const pythonBridge = require('./python-bridge')
 
 let mainWindow
+let pythonProcess = null
+
+// ─── Python 服务生命周期 ───────────────────────────────────────────────────────
+
+function startPythonServer() {
+  const pythonDir = path.join(__dirname, '../../python')
+  // uv run 会自动激活 python/.venv 里的环境
+  pythonProcess = spawn('uv', ['run', 'server.py'], {
+    cwd: pythonDir,
+    stdio: ['ignore', 'pipe', 'pipe'],
+    shell: process.platform === 'win32',
+  })
+
+  pythonProcess.stdout.on('data', (d) => process.stdout.write(`[python] ${d}`))
+  pythonProcess.stderr.on('data', (d) => process.stderr.write(`[python] ${d}`))
+
+  pythonProcess.on('exit', (code) => {
+    if (code !== 0 && code !== null) {
+      console.error(`[python] server exited with code ${code}`)
+    }
+    pythonProcess = null
+  })
+}
+
+function stopPythonServer() {
+  if (pythonProcess) {
+    pythonProcess.kill()
+    pythonProcess = null
+  }
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -31,6 +62,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  startPythonServer()
   createWindow()
   registerIpcHandlers()
 
@@ -40,6 +72,7 @@ app.whenReady().then(() => {
 })
 
 app.on('window-all-closed', () => {
+  stopPythonServer()
   if (process.platform !== 'darwin') app.quit()
 })
 

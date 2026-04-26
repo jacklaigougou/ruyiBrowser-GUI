@@ -1,0 +1,35 @@
+version = 1
+revision = 3
+requires-python = ">=3.13"
+
+[[package]]
+name = "python"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "ruyipage" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "ruyipage", specifier = ">=1.2.1" }]
+
+[[package]]
+name = "ruyipage"
+version = "1.2.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "websocket-client" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/24/48/5f7eaa0f708322986f54e55bec920b38562159be0de670830a0fe60a4ad0/ruyipage-1.2.1.tar.gz", hash = "sha256:788b1a6869149cd811c9a850f4a6f1b2a8fb829697b2df8253b0a137e712174f", size = 321062, upload-time = "2026-04-23T16:49:41.724Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5f/4b/361c537bd24cfd76956bd8023b16f270db313dde7323f037152af1b4f1f9/ruyipage-1.2.1-py3-none-any.whl", hash = "sha256:da6b3357d4bab0fead6d4c71973fcbb475dc7108e2d37ef0182218e7ec70baa7", size = 256275, upload-time = "2026-04-23T16:49:39.81Z" },
+]
+
+[[package]]
+name = "websocket-client"
+version = "1.9.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/2c/41/aa4bf9664e4cda14c3b39865b12251e8e7d239f4cd0e3cc1b6c2ccde25c1/websocket_client-1.9.0.tar.gz", hash = "sha256:9e813624b6eb619999a97dc7958469217c3176312b3a16a4bd1bc7e08a46ec98", size = 70576, upload-time = "2025-10-07T21:16:36.495Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/34/db/b10e48aa8fff7407e67470363eac595018441cf32d5e1001567a7aeba5d2/websocket_client-1.9.0-py3-none-any.whl", hash = "sha256:af248a825037ef591efbf6ed20cc5faa03d3b47b9e5a2230a529eeee1c1fc3ef", size = 82616, upload-time = "2025-10-07T21:16:34.951Z" },
+]
