@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### v0.3.3 — feat: speech 语音映射、语音预览行、同行输入框布局
+
+- `src/main/http/speechVoiceMap.js`：新增文件，内含 22 种语言的 Windows 内置语音映射表及 countryCode→lang 映射；`buildSpeechLines()` 生成 6 条 speech.* fpfile 配置行
+- `src/main/main.js`：引入 `buildSpeechLines`，`buildFpfileLines()` 中从 `env.language` 提取主语言代码，自动写入 speech 配置
+- `TabFingerprint.vue`：
+  - 新增「语音」独立行，实时显示当前语言对应的默认语音预览
+  - 时区、地理位置、语言改为同行布局（按钮组 + 输入框在同一行）
+  - 按钮组固定宽度 230px，输入框 flex:1 撑满剩余空间
+- `style.css`：`.combo-input-row` 加 `width:100%`，修复 ComboInput 宽度未撑满问题；`.combo-wrap` 移除默认 `margin-top`
+
 ### v0.3.2 — feat: IP 查询、ComboInput 组件、布局修复、样式优化
 
 - `src/main/http/ipQuery.js`：新增文件，封装 `ip-api.com` 免费 IP 地理信息查询

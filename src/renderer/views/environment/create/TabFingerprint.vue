@@ -14,44 +14,56 @@
       <div class="field-row">
         <span class="field-label">时区</span>
         <div class="field-control">
-          <div class="tab-group">
-            <button v-for="opt in tzOpts" :key="opt.value" class="tab-opt"
-              :class="{ active: form.timezoneMode === opt.value }"
-              @click="form.timezoneMode = opt.value">{{ opt.label }}</button>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap">
+            <div class="tab-group" style="flex:0 0 230px;flex-wrap:nowrap">
+              <button v-for="opt in tzOpts" :key="opt.value" class="tab-opt"
+                :class="{ active: form.timezoneMode === opt.value }"
+                @click="form.timezoneMode = opt.value">{{ opt.label }}</button>
+            </div>
+            <ComboInput v-if="form.timezoneMode === 'custom'" v-model="form.timezone"
+              :options="tzPresets" placeholder="Asia/Shanghai" style="flex:1;margin-top:0" />
           </div>
-          <ComboInput v-if="form.timezoneMode === 'custom'" v-model="form.timezone"
-            :options="tzPresets" placeholder="Asia/Shanghai" />
         </div>
       </div>
 
       <div class="field-row">
         <span class="field-label">地理位置</span>
         <div class="field-control">
-          <div class="tab-group">
-            <button v-for="opt in geoOpts" :key="opt.value" class="tab-opt"
-              :class="{ active: form.geoMode === opt.value }"
-              @click="form.geoMode = opt.value">{{ opt.label }}</button>
-          </div>
-          <template v-if="form.geoMode === 'custom'">
-            <div style="display:flex;gap:8px;margin-top:8px">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap">
+            <div class="tab-group" style="flex:0 0 230px;flex-wrap:nowrap">
+              <button v-for="opt in geoOpts" :key="opt.value" class="tab-opt"
+                :class="{ active: form.geoMode === opt.value }"
+                @click="form.geoMode = opt.value">{{ opt.label }}</button>
+            </div>
+            <template v-if="form.geoMode === 'custom'">
               <input v-model="form.geoLat" type="text" class="field-input" placeholder="纬度 31.2304" />
               <input v-model="form.geoLon" type="text" class="field-input" placeholder="经度 121.4737" />
-            </div>
-          </template>
+            </template>
+          </div>
         </div>
       </div>
 
       <div class="field-row">
         <span class="field-label">语言</span>
         <div class="field-control">
-          <div class="tab-group">
-            <button v-for="opt in langOpts" :key="opt.value" class="tab-opt"
-              :class="{ active: form.languageMode === opt.value }"
-              @click="form.languageMode = opt.value">{{ opt.label }}</button>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap">
+            <div class="tab-group" style="flex:0 0 230px;flex-wrap:nowrap">
+              <button v-for="opt in langOpts" :key="opt.value" class="tab-opt"
+                :class="{ active: form.languageMode === opt.value }"
+                @click="form.languageMode = opt.value">{{ opt.label }}</button>
+            </div>
+            <ComboInput v-if="form.languageMode === 'custom'" v-model="form.language"
+              :options="langPresets" placeholder="zh-CN,zh" style="flex:1;margin-top:0" />
           </div>
-          <template v-if="form.languageMode === 'custom'">
-            <ComboInput v-model="form.language" :options="langPresets" placeholder="zh-CN,zh" />
-          </template>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <span class="field-label">语音</span>
+        <div class="field-control">
+          <span style="font-size:13px;color:var(--text-muted);padding-top:8px;display:block">
+            {{ speechPreview || '—' }}
+          </span>
         </div>
       </div>
 
@@ -209,10 +221,40 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import ComboInput from '../../../components/ComboInput.vue'
 
 const props = defineProps({ form: Object })
+
+const SPEECH_DEFAULT = {
+  'zh-CN': 'Microsoft Huihui Desktop - Chinese (Simplified) · zh-CN',
+  'zh-TW': 'Microsoft Hanhan Desktop - Chinese (Traditional, Taiwan) · zh-TW',
+  'zh-HK': 'Microsoft Tracy Desktop - Chinese (Traditional, Hong Kong S.A.R.) · zh-HK',
+  'en-US': 'Microsoft David Desktop - English (United States) · en-US',
+  'en-GB': 'Microsoft Hazel Desktop - English (Great Britain) · en-GB',
+  'ja-JP': 'Microsoft Haruka Desktop - Japanese · ja-JP',
+  'ko-KR': 'Microsoft Heami Desktop - Korean · ko-KR',
+  'fr-FR': 'Microsoft Hortense Desktop - French · fr-FR',
+  'de-DE': 'Microsoft Hedda Desktop - German · de-DE',
+  'es-ES': 'Microsoft Helena Desktop - Spanish (Spain) · es-ES',
+  'es-MX': 'Microsoft Sabina Desktop - Spanish (Mexico) · es-MX',
+  'pt-BR': 'Microsoft Maria Desktop - Portuguese (Brazil) · pt-BR',
+  'pt-PT': 'Microsoft Helia Desktop - Portuguese (Portugal) · pt-PT',
+  'ru-RU': 'Microsoft Irina Desktop - Russian · ru-RU',
+  'ar-SA': 'Microsoft Naayf Desktop - Arabic (Saudi Arabia) · ar-SA',
+  'th-TH': 'Microsoft Pattara Desktop - Thai · th-TH',
+  'vi-VN': 'Microsoft An Desktop - Vietnamese (Vietnam) · vi-VN',
+  'id-ID': 'Microsoft Andika Desktop - Indonesian · id-ID',
+  'it-IT': 'Microsoft Elsa Desktop - Italian (Italy) · it-IT',
+  'nl-NL': 'Microsoft Frank Desktop - Dutch (Netherlands) · nl-NL',
+  'pl-PL': 'Microsoft Paulina Desktop - Polish · pl-PL',
+  'tr-TR': 'Microsoft Tolga Desktop - Turkish · tr-TR',
+}
+
+const speechPreview = computed(() => {
+  const lang = (props.form.language || '').split(',')[0].trim()
+  return SPEECH_DEFAULT[lang] || null
+})
 
 const querying = ref(false)
 const queryError = ref('')

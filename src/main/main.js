@@ -6,6 +6,7 @@ const http = require('http')
 const { spawn } = require('child_process')
 const pythonBridge = require('./python-bridge')
 const { queryIp } = require('./http/ipQuery')
+const { buildSpeechLines } = require('./http/speechVoiceMap')
 
 let mainWindow
 let pythonProcess = null
@@ -367,6 +368,16 @@ function buildFpfileLines(env) {
     add('screenHeight', env.screen_h)
   }
   add('webdriver', env.webdriver)
+
+  // speech 语音配置：从 language 字段提取主语言代码（如 zh-CN,zh → zh-CN）
+  if (env.language && env.language !== 'ip' && env.language !== 'real') {
+    const primaryLang = env.language.split(',')[0].trim()
+    // 从语言代码反推 countryCode（取区域部分，如 zh-CN → CN，ja-JP → JP）
+    const regionPart = primaryLang.split('-')[1] || ''
+    const speechLines = buildSpeechLines(regionPart.toUpperCase())
+    speechLines.forEach(l => lines.push(l))
+  }
+
   if (env.webrtc_mode === 'disabled') {
     lines.push('webrtcPolicy:disable_non_proxied_udp')
     lines.push('webdriver:0')

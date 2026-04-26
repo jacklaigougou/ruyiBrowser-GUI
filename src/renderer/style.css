@@ -524,6 +524,8 @@ textarea { resize: vertical; }
   color: var(--text-secondary);
   cursor: pointer;
   transition: all .15s;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .tab-opt:hover { color: var(--accent); background: var(--accent-light); }
 .tab-opt.active {
@@ -676,8 +678,8 @@ textarea { resize: vertical; }
 }
 
 /* ── ComboInput ── */
-.combo-wrap { position: relative; width: 100%; margin-top: 8px; }
-.combo-input-row { position: relative; display: flex; }
+.combo-wrap { position: relative; width: 100%; }
+.combo-input-row { position: relative; display: flex; width: 100%; }
 .combo-input { padding-right: 32px !important; }
 .combo-arrow {
   position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
