@@ -1,0 +1,33 @@
+{
+  "name": "ruyipage-electron",
+  "version": "1.0.0",
+  "description": "ruyiPage 图形化管理工具 - 基于Electron的ruyipage GUI封装",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder"
+  },
+  "keywords": ["electron", "ruyipage", "firefox", "automation"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  },
+  "build": {
+    "appId": "com.ruyipage.electron",
+    "productName": "ruyiPage GUI",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ]
+  }
+}

@@ -1,0 +1,34 @@
+const { contextBridge, ipcRenderer } = require('electron')
+
+// 只暴露有限的API给renderer，所有实际请求走main进程
+contextBridge.exposeInMainWorld('ruyi', {
+  // 服务状态
+  health: () => ipcRenderer.invoke('ruyi:health'),
+  config: (cfg) => ipcRenderer.invoke('ruyi:config', cfg),
+
+  // 会话管理
+  launch: (options) => ipcRenderer.invoke('ruyi:launch', options),
+  listSessions: () => ipcRenderer.invoke('ruyi:list-sessions'),
+  close: (sessionId) => ipcRenderer.invoke('ruyi:close', { sessionId }),
+
+  // 导航
+  navigate: (sessionId, url) => ipcRenderer.invoke('ruyi:navigate', { sessionId, url }),
+  pageInfo: (sessionId) => ipcRenderer.invoke('ruyi:page-info', { sessionId }),
+
+  // 元素操作
+  findElement: (sessionId, selector) => ipcRenderer.invoke('ruyi:find-element', { sessionId, selector }),
+  click: (sessionId, selector) => ipcRenderer.invoke('ruyi:click', { sessionId, selector }),
+  input: (sessionId, selector, text) => ipcRenderer.invoke('ruyi:input', { sessionId, selector, text }),
+
+  // 工具
+  screenshot: (sessionId) => ipcRenderer.invoke('ruyi:screenshot', { sessionId }),
+  executeScript: (sessionId, script) => ipcRenderer.invoke('ruyi:execute-script', { sessionId, script }),
+
+  // Cookie
+  getCookies: (sessionId) => ipcRenderer.invoke('ruyi:get-cookies', { sessionId }),
+  setCookies: (sessionId, cookies) => ipcRenderer.invoke('ruyi:set-cookies', { sessionId, cookies }),
+
+  // 配置
+  setProxy: (sessionId, proxy) => ipcRenderer.invoke('ruyi:set-proxy', { sessionId, proxy }),
+  setGeolocation: (sessionId, lat, lon) => ipcRenderer.invoke('ruyi:set-geolocation', { sessionId, lat, lon }),
+})
