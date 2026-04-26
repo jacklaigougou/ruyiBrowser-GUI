@@ -41,7 +41,7 @@
           <SummaryRow label="时区"       :value="tzLabel" />
           <SummaryRow label="语言"       :value="langLabel" />
           <SummaryRow label="分辨率"     :value="resolutionLabel" />
-          <SummaryRow label="字体"       :value="form.fontMode === 'custom' ? (form.fontSystem || '自定义') : '默认'" />
+          <SummaryRow label="字体"       :value="form.fontSystem" />
           <SummaryRow label="User-Agent" :value="form.userAgent || '默认'" />
           <SummaryRow label="Canvas"     :value="form.canvasSeed != null ? `种子 [${form.canvasSeed}]` : '默认'" />
           <SummaryRow label="WebGL"      :value="form.webglVendor || '默认'" />
@@ -92,7 +92,7 @@ const form = ref({
   // 分辨率
   resolutionMode: 'random', resolutionPreset: '', screenW: null, screenH: null,
   // 字体
-  fontMode: 'default', fontSystem: '',
+  fontSystem: 'windows',
   // User-Agent / Canvas / WebGL
   userAgent: '',
   canvasSeed: null,
@@ -157,7 +157,7 @@ async function save() {
     publicIpv6: '',
     timezone: form.value.timezoneMode === 'custom' ? form.value.timezone : form.value.timezoneMode,
     language: form.value.languageMode === 'custom' ? form.value.language : form.value.languageMode,
-    fontSystem: form.value.fontMode === 'custom' ? form.value.fontSystem : '',
+    fontSystem: form.value.fontSystem,
     userAgent: form.value.userAgent,
     canvasSeed: form.value.canvasSeed ?? null,
     webglVendor: form.value.webglVendor,

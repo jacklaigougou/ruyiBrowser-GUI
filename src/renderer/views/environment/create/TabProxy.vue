@@ -4,7 +4,7 @@
       <div class="field-row">
         <span class="field-label">代理类型</span>
         <div class="field-control">
-          <select v-model="form.proxyType" class="field-input">
+          <select v-model="form.proxyType" class="field-input" style="width:auto;min-width:200px">
             <option value="none">No Proxy（本地直连）</option>
             <option value="http">HTTP</option>
             <option value="socks5">SOCKS5</option>
@@ -45,7 +45,7 @@
       <div class="field-row">
         <span class="field-label">WebRTC</span>
         <div class="field-control">
-          <select v-model="form.webrtcMode" class="field-input">
+          <select v-model="form.webrtcMode" class="field-input" style="width:auto;min-width:140px">
             <option value="disabled">禁用</option>
             <option value="real">真实</option>
             <option value="proxy">使用代理</option>

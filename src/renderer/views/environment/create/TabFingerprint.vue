@@ -1,16 +1,20 @@
 <template>
   <div>
-    <!-- 时区 / 地理位置 / 语言 / 界面语言 -->
+    <!-- 时区 / 地理位置 / 语言 / 语音 -->
     <div class="form-card">
-      <!-- 卡片右上角查询按钮 -->
-      <div class="card-toolbar">
-        <button class="btn" :disabled="querying" @click="queryIpInfo">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          {{ querying ? '查询中…' : '查询 IP' }}
-        </button>
-        <span v-if="queryError" style="font-size:12px;color:var(--danger)">{{ queryError }}</span>
+      <div class="card-collapse-header" @click="collapseGeo = !collapseGeo">
+        <span class="card-title">地区与语言</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="btn" :disabled="querying" @click.stop="queryIpInfo">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            {{ querying ? '查询中…' : '查询 IP' }}
+          </button>
+          <span v-if="queryError" style="font-size:12px;color:var(--danger)">{{ queryError }}</span>
+          <svg class="collapse-arrow" :class="{ open: !collapseGeo }" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
       </div>
 
+      <div v-show="!collapseGeo">
       <div class="field-row">
         <span class="field-label">时区</span>
         <div class="field-control">
@@ -67,120 +71,57 @@
         </div>
       </div>
 
+      </div><!-- /v-show -->
     </div>
 
-    <!-- User-Agent / Canvas / WebGL / 分辨率 / 字体 -->
+    <!-- 系统字体集 / UA / CPU / 屏幕 / Canvas -->
     <div class="form-card">
+      <div class="card-collapse-header" @click="collapseHw = !collapseHw">
+        <span class="card-title">硬件与指纹</span>
+        <svg class="collapse-arrow" :class="{ open: !collapseHw }" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+
+      <div v-show="!collapseHw">
+      <div class="field-row">
+        <span class="field-label">系统字体</span>
+        <div class="field-control">
+          <div style="display:flex;align-items:center;gap:16px;flex-wrap:nowrap">
+            <select v-model="form.fontSystem" class="field-input" style="width:auto;min-width:105px">
+              <option value="windows">Windows</option>
+              <option value="linux">Linux</option>
+              <option value="mac">Mac</option>
+            </select>
+            <span style="font-size:13px;color:var(--accent);white-space:nowrap;flex-shrink:0">CPU 逻辑核心数</span>
+            <ComboInput v-model.number="form.cpuCores" :options="cpuPresets" placeholder="留空使用默认" style="flex:1" />
+            <span style="font-size:13px;color:var(--accent);white-space:nowrap;flex-shrink:0">Canvas 噪声种子</span>
+            <input v-model.number="form.canvasSeed" type="number" class="field-input" placeholder="留空默认" style="flex:1" />
+          </div>
+        </div>
+      </div>
+      <div class="field-row">
+        <span class="field-label">屏幕宽高</span>
+        <div class="field-control">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap">
+            <div style="display:flex;align-items:center;gap:8px;flex:0 0 360px;max-width:360px;min-width:0">
+              <ComboInput v-model.number="form.screenW" :options="screenWPresets" placeholder="宽 1920" style="flex:1;min-width:0" />
+              <span style="font-size:13px;color:var(--text-muted);flex-shrink:0">×</span>
+              <ComboInput v-model.number="form.screenH" :options="screenHPresets" placeholder="高 1080" style="flex:1;min-width:0" />
+            </div>
+            <span style="font-size:13px;color:var(--accent);white-space:nowrap;flex-shrink:0;margin-left:8px">WebDriver</span>
+            <div class="tab-group" style="flex-shrink:0">
+              <button class="tab-opt" :class="{ active: form.webdriver === '0' }" @click="form.webdriver = '0'">隐藏</button>
+              <button class="tab-opt" :class="{ active: form.webdriver === '1' }" @click="form.webdriver = '1'">暴露</button>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="field-row">
         <span class="field-label">User-Agent</span>
         <div class="field-control">
-          <input v-model="form.userAgent" type="text" class="field-input"
-            list="ua-list" placeholder="留空使用浏览器默认" />
-          <datalist id="ua-list">
-            <option v-for="ua in uaPresets" :key="ua" :value="ua" />
-          </datalist>
+          <ComboInput v-model="form.userAgent" :options="uaPresets" placeholder="留空使用浏览器默认" />
         </div>
       </div>
-      <div class="field-row">
-        <span class="field-label">分辨率</span>
-        <div class="field-control">
-          <div class="tab-group">
-            <button v-for="opt in resolutionModeOpts" :key="opt.value" class="tab-opt"
-              :class="{ active: form.resolutionMode === opt.value }"
-              @click="form.resolutionMode = opt.value">{{ opt.label }}</button>
-          </div>
-          <template v-if="form.resolutionMode === 'preset'">
-            <select v-model="form.resolutionPreset" class="field-input" style="margin-top:8px">
-              <option value="">基于 User-Agent</option>
-              <option value="1920x1080">1920 × 1080</option>
-              <option value="1440x900">1440 × 900</option>
-              <option value="1366x768">1366 × 768</option>
-              <option value="2560x1440">2560 × 1440</option>
-            </select>
-          </template>
-          <template v-if="form.resolutionMode === 'custom'">
-            <div style="display:flex;gap:8px;margin-top:8px">
-              <input v-model.number="form.screenW" type="number" class="field-input" placeholder="宽 1920" />
-              <span style="line-height:34px;color:var(--text-muted)">×</span>
-              <input v-model.number="form.screenH" type="number" class="field-input" placeholder="高 1080" />
-            </div>
-          </template>
-        </div>
-      </div>
-      <div class="field-row">
-        <span class="field-label">字体</span>
-        <div class="field-control">
-          <div class="tab-group">
-            <button class="tab-opt" :class="{ active: form.fontMode === 'default' }" @click="form.fontMode = 'default'">默认</button>
-            <button class="tab-opt" :class="{ active: form.fontMode === 'custom' }" @click="form.fontMode = 'custom'">自定义</button>
-          </div>
-          <select v-if="form.fontMode === 'custom'" v-model="form.fontSystem" class="field-input" style="margin-top:8px">
-            <option value="windows">Windows</option>
-            <option value="linux">Linux</option>
-            <option value="mac">Mac</option>
-          </select>
-        </div>
-      </div>
-      <div class="field-row">
-        <span class="field-label">Canvas 种子</span>
-        <div class="field-control">
-          <input v-model.number="form.canvasSeed" type="number" class="field-input" placeholder="随机整数" />
-        </div>
-      </div>
-      <div class="field-row">
-        <span class="field-label">WebGL Vendor</span>
-        <div class="field-control">
-          <input v-model="form.webglVendor" type="text" class="field-input"
-            list="webgl-vendor-list" placeholder="Intel Inc." />
-          <datalist id="webgl-vendor-list">
-            <option value="Intel Inc." />
-            <option value="NVIDIA Corporation" />
-            <option value="AMD" />
-            <option value="Apple Inc." />
-            <option value="Google Inc." />
-          </datalist>
-        </div>
-      </div>
-      <div class="field-row">
-        <span class="field-label">WebGL Renderer</span>
-        <div class="field-control">
-          <input v-model="form.webglRenderer" type="text" class="field-input"
-            list="webgl-renderer-list" placeholder="Intel Iris OpenGL Engine" />
-          <datalist id="webgl-renderer-list">
-            <option value="Intel Iris OpenGL Engine" />
-            <option value="Intel(R) UHD Graphics 620" />
-            <option value="ANGLE (NVIDIA GeForce GTX 1060)" />
-            <option value="ANGLE (AMD Radeon RX 580)" />
-            <option value="Apple M1" />
-          </datalist>
-        </div>
-      </div>
-      <div class="field-row">
-        <span class="field-label">Unmasked Vendor</span>
-        <div class="field-control">
-          <input v-model="form.webglUnmaskedVendor" type="text" class="field-input"
-            list="webgl-vendor-list" placeholder="Intel Inc." />
-        </div>
-      </div>
-      <div class="field-row">
-        <span class="field-label">Unmasked Renderer</span>
-        <div class="field-control">
-          <input v-model="form.webglUnmaskedRenderer" type="text" class="field-input"
-            list="webgl-renderer-list" placeholder="ANGLE ..." />
-        </div>
-      </div>
-      <div class="field-row">
-        <span class="field-label">最大纹理尺寸</span>
-        <div class="field-control">
-          <input v-model.number="form.webglMaxTexture" type="number" class="field-input"
-            list="texture-list" placeholder="16384" />
-          <datalist id="texture-list">
-            <option value="8192" />
-            <option value="16384" />
-            <option value="32768" />
-          </datalist>
-        </div>
-      </div>
+      </div><!-- /v-show -->
     </div>
 
     <!-- 硬件噪音 -->
@@ -256,6 +197,8 @@ const speechPreview = computed(() => {
   return SPEECH_DEFAULT[lang] || null
 })
 
+const collapseGeo = ref(false)
+const collapseHw = ref(false)
 const querying = ref(false)
 const queryError = ref('')
 
@@ -337,4 +280,9 @@ const uaPresets = [
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 14.4; rv:124.0) Gecko/20100101 Firefox/124.0',
   'Mozilla/5.0 (X11; Linux x86_64; rv:124.0) Gecko/20100101 Firefox/124.0',
 ]
+
+const cpuPresets = ['2', '4', '6', '8', '12', '16', '32']
+
+const screenWPresets = ['1280', '1366', '1440', '1600', '1920', '2560', '3840']
+const screenHPresets = ['720', '768', '900', '1024', '1080', '1440', '2160']
 </script>

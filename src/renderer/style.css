@@ -494,6 +494,21 @@ textarea { resize: vertical; }
 .field-input:focus { border-color: var(--accent); }
 .field-textarea { resize: none; line-height: 1.6; }
 
+/* 统一 Windows 下原生 select 与 input 的视觉高度 */
+select.field-input {
+  height: 33px;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-right: 32px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23909399' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px 12px;
+}
+
 .char-count {
   font-size: 11px;
   color: var(--text-muted);
@@ -629,6 +644,29 @@ textarea { resize: vertical; }
   justify-content: flex-end;
   gap: 8px;
   padding: 10px 0 0;
+}
+
+/* 可折叠卡片标题栏 */
+.card-collapse-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0 12px;
+  cursor: pointer;
+  user-select: none;
+}
+.card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.collapse-arrow {
+  color: var(--text-muted);
+  transition: transform .2s;
+  transform: rotate(-90deg);
+}
+.collapse-arrow.open {
+  transform: rotate(0deg);
 }
 
 /* ── Toggle switch ── */

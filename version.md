@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+### v0.3.4 — ui: 硬件与指纹卡片布局重构、WebDriver 字段移入指纹卡、字体集简化
+
+- `TabFingerprint.vue`：
+  - 卡片二（硬件与指纹）改为可折叠，新增标题"硬件与指纹"
+  - 系统字体集简化为直接下拉（Windows/Linux/Mac），默认 Windows，去掉默认/自定义两态
+  - 系统字体集 + CPU 逻辑核心数 + Canvas 噪声种子合并为第一行
+  - 屏幕宽高合并为一行，后接 WebDriver 隐藏/暴露按钮组
+  - User-Agent 移至最后一行
+  - WebDriver 字段从 TabAdvanced 移入硬件与指纹卡，绑定 `form.webdriver`
+- `TabProxy.vue`：代理类型、WebRTC 下拉框改为 `width:auto`，修复撑满整行问题
+- `index.vue`：`fontMode` 字段移除，`fontSystem` 默认值改为 `'windows'`；概要面板字体列直接显示 `form.fontSystem`；保存时直接传 `fontSystem`
+
 ### v0.3.3 — feat: speech 语音映射、语音预览行、同行输入框布局
 
 - `src/main/http/speechVoiceMap.js`：新增文件，内含 22 种语言的 Windows 内置语音映射表及 countryCode→lang 映射；`buildSpeechLines()` 生成 6 条 speech.* fpfile 配置行
