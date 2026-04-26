@@ -1,27 +1,17 @@
 <template>
   <aside class="sidebar">
-    <div class="sidebar-title">
-      <span>导航</span>
-    </div>
+    <div class="sidebar-title">导航</div>
 
-    <!-- 可折叠分组 -->
-    <div v-for="group in navGroups" :key="group.label" class="nav-group">
-      <div class="nav-group-header" @click="toggle(group)">
-        <span>{{ group.label }}</span>
-        <span class="arrow" :class="{ open: group.open }">▾</span>
-      </div>
-      <div class="nav-children" :style="{ maxHeight: group.open ? group.children.length * 44 + 'px' : '0' }">
-        <RouterLink
-          v-for="item in group.children"
-          :key="item.to"
-          class="nav-item"
-          :to="item.to"
-        >
-          <span class="nav-icon">{{ item.icon }}</span>
-          {{ item.label }}
-        </RouterLink>
-      </div>
-    </div>
+    <nav class="nav">
+      <RouterLink class="nav-item" to="/environment">
+        <span class="nav-icon">◈</span>
+        环境管理
+      </RouterLink>
+      <RouterLink class="nav-item" to="/settings">
+        <span class="nav-icon">⚙</span>
+        系统设置
+      </RouterLink>
+    </nav>
 
     <div class="status-bar">
       <span class="dot" :class="online ? 'dot--on' : 'dot--off'"></span>
@@ -31,31 +21,6 @@
 </template>
 
 <script setup>
-import { reactive } from 'vue'
 import { useHealthStore } from '../composables/useHealth'
-
 const { online } = useHealthStore()
-
-const navGroups = reactive([
-  {
-    label: '浏览器控制',
-    open: true,
-    children: [
-      { to: '/dashboard', label: '控制台',    icon: '⊞' },
-      { to: '/sessions',  label: '会话管理',  icon: '◈' },
-      { to: '/browser',   label: '浏览器操作', icon: '◉' },
-    ],
-  },
-  {
-    label: '系统设置',
-    open: false,
-    children: [
-      { to: '/settings', label: '服务配置', icon: '⚙' },
-    ],
-  },
-])
-
-function toggle(group) {
-  group.open = !group.open
-}
 </script>

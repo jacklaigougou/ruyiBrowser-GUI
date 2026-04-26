@@ -117,46 +117,20 @@ body {
   justify-content: space-between;
 }
 
-/* ── Nav tree ── */
-.nav-group { border-bottom: 1px solid var(--border); }
-
-.nav-group-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 20px;
-  cursor: pointer;
-  font-size: 13px;
-  color: var(--text-secondary);
-  user-select: none;
-  transition: background .15s;
-}
-.nav-group-header:hover { background: var(--bg); }
-
-.nav-group-header .arrow {
-  font-size: 11px;
-  transition: transform .2s;
-  color: var(--text-muted);
-}
-.nav-group-header .arrow.open { transform: rotate(180deg); }
-
-.nav-children {
-  overflow: hidden;
-  transition: max-height .25s ease;
-}
+/* ── Nav ── */
+.nav { padding: 8px 0; }
 
 .nav-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 20px 10px 32px;
+  padding: 11px 20px;
   cursor: pointer;
   font-size: 13px;
   color: var(--text-secondary);
   text-decoration: none;
   transition: background .15s, color .15s;
   border-left: 3px solid transparent;
-  position: relative;
 }
 .nav-item:hover { background: var(--bg); color: var(--text); }
 .nav-item.router-link-active {

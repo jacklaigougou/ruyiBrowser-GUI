@@ -6,11 +6,9 @@ import './style.css'
 const router = createRouter({
   history: createWebHashHistory(),
   routes: [
-    { path: '/', redirect: '/dashboard' },
-    { path: '/dashboard', component: () => import('./views/dashboard/index.vue') },
-    { path: '/sessions',  component: () => import('./views/sessions/index.vue') },
-    { path: '/browser',   component: () => import('./views/browser/index.vue') },
-    { path: '/settings',  component: () => import('./views/settings/index.vue') },
+    { path: '/', redirect: '/environment' },
+    { path: '/environment', component: () => import('./views/environment/index.vue') },
+    { path: '/settings',    component: () => import('./views/settings/index.vue') },
   ],
 })
 
