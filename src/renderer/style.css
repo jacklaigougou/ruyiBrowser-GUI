@@ -370,7 +370,40 @@ textarea { resize: vertical; }
 .stat-card-label { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
 .stat-card-value { font-size: 26px; font-weight: 700; color: var(--accent); }
 
-/* ── Settings ── */
+/* ── Create env form ── */
+.create-env-page { display: flex; flex-direction: column; }
+
+.form-sections { display: flex; flex-direction: column; gap: 24px; margin-top: 4px; }
+
+.form-section {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.section-title {
+  padding: 10px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: #fafafa;
+  border-bottom: 1px solid var(--border);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  padding: 16px;
+}
+
+.form-item { display: flex; flex-direction: column; gap: 6px; }
+.form-item label { font-size: 12px; color: var(--text-muted); }
+.form-item--full { grid-column: 1 / -1; }
+
+.required { color: var(--danger); }
 .settings-form { max-width: 440px; display: flex; flex-direction: column; gap: 16px; }
 
 /* ── Empty ── */

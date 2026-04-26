@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### feat: environment create page with full fingerprint fields
+- 新增路由 `/environment/create`
+- 新增 `views/environment/create/index.vue`：独立新建环境页面（路由跳转，非 Modal）
+  - 分四个区块：基础信息 / 网络WebRTC / 语言地区 / 硬件指纹
+  - 字段覆盖 firefox-fingerprintBrowser 所有 fpfile 配置项
+  - 保存后写入 `useEnvStore`，跳回列表页
+- 新增 `composables/useEnvStore.js`：环境列表全局单例（add/remove/get）
+- `views/environment/index.vue`：新建按钮改为路由跳转，表格新增时区列，启动参数对齐 foxprint.exe
+- `style.css`：新增 `.form-section`、`.form-grid`、`.form-item` 等表单布局样式
+
 ---
 
 ## [0.2.0] - 2026-04-27
