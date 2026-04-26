@@ -7,12 +7,14 @@
         <div style="display:flex;align-items:center;gap:8px">
           <button class="btn" :disabled="querying" @click.stop="queryIpInfo">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            {{ querying ? '查询中…' : '查询 IP' }}
+            {{ querying ? '查询中…' : '根据IP设置' }}
           </button>
           <span v-if="queryError" style="font-size:12px;color:var(--danger)">{{ queryError }}</span>
           <svg class="collapse-arrow" :class="{ open: !collapseGeo }" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
       </div>
+
+      <div style="border-top:1px solid var(--border);margin:0 -20px"></div>
 
       <div v-show="!collapseGeo">
       <div class="field-row">
@@ -78,8 +80,13 @@
     <div class="form-card">
       <div class="card-collapse-header" @click="collapseHw = !collapseHw">
         <span class="card-title">硬件与指纹</span>
-        <svg class="collapse-arrow" :class="{ open: !collapseHw }" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="btn" @click.stop="autoSetHw">一键设置</button>
+          <svg class="collapse-arrow" :class="{ open: !collapseHw }" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
       </div>
+
+      <div style="border-top:1px solid var(--border);margin:0 -20px"></div>
 
       <div v-show="!collapseHw">
       <div class="field-row">
@@ -124,40 +131,6 @@
       </div><!-- /v-show -->
     </div>
 
-    <!-- 硬件噪音 -->
-    <div class="form-card">
-      <div class="field-row">
-        <span class="field-label">硬件噪音</span>
-        <div class="field-control">
-          <div class="noise-row">
-            <label class="toggle-wrap">
-              <span class="toggle"><input type="checkbox" v-model="form.noiseCanvas" /><span class="toggle-slider"></span></span>
-              Canvas
-            </label>
-            <label class="toggle-wrap">
-              <span class="toggle"><input type="checkbox" v-model="form.noiseWebgl" /><span class="toggle-slider"></span></span>
-              WebGL图像
-            </label>
-            <label class="toggle-wrap">
-              <span class="toggle"><input type="checkbox" v-model="form.noiseAudio" /><span class="toggle-slider"></span></span>
-              AudioContext
-            </label>
-            <label class="toggle-wrap">
-              <span class="toggle"><input type="checkbox" v-model="form.noiseMedia" /><span class="toggle-slider"></span></span>
-              媒体设备
-            </label>
-            <label class="toggle-wrap">
-              <span class="toggle"><input type="checkbox" v-model="form.noiseClientRects" /><span class="toggle-slider"></span></span>
-              ClientRects
-            </label>
-            <label class="toggle-wrap">
-              <span class="toggle"><input type="checkbox" v-model="form.noiseSpeech" /><span class="toggle-slider"></span></span>
-              SpeechVoices
-            </label>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -199,6 +172,16 @@ const speechPreview = computed(() => {
 
 const collapseGeo = ref(false)
 const collapseHw = ref(false)
+
+async function autoSetHw() {
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)]
+  props.form.cpuCores = Number(pick(cpuPresets))
+  props.form.canvasSeed = Math.floor(Math.random() * 101)
+  props.form.userAgent = pick(uaPresets)
+  const { width, height } = await window.ruyi.screenSize()
+  props.form.screenW = width
+  props.form.screenH = height
+}
 const querying = ref(false)
 const queryError = ref('')
 

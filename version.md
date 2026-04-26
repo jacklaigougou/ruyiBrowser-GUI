@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### v0.3.5 — feat: 一键设置、分割线、删除硬件噪音、重命名按钮
+
+- `TabFingerprint.vue`：
+  - 硬件与指纹卡新增「一键设置」按钮，随机填入 CPU 核心数、Canvas 噪声种子（0-100）、User-Agent，屏幕宽高读取真实屏幕分辨率
+  - 删除硬件噪音卡片
+  - 「查询 IP」按钮改名为「根据IP设置」
+  - 两张可折叠卡片标题栏下方各加分割线
+- `src/main/main.js`：新增 `ruyi:screen-size` IPC handler，返回主屏幕 `width/height`
+- `src/preload/preload.js`：暴露 `screenSize()`
+
 ### v0.3.4 — ui: 硬件与指纹卡片布局重构、WebDriver 字段移入指纹卡、字体集简化
 
 - `TabFingerprint.vue`：

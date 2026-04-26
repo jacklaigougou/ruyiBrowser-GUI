@@ -51,5 +51,8 @@ contextBridge.exposeInMainWorld('ruyi', {
 
   // IP 地理信息查询
   queryIp: (ip) => ipcRenderer.invoke('ruyi:query-ip', ip),
+
+  // 屏幕尺寸
+  screenSize: () => ipcRenderer.invoke('ruyi:screen-size'),
 })
 

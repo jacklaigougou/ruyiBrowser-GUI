@@ -330,6 +330,12 @@ function registerIpcHandlers() {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
     shell.openPath(dir)
   })
+
+  ipcMain.handle('ruyi:screen-size', () => {
+    const { screen } = require('electron')
+    const { width, height } = screen.getPrimaryDisplay().size
+    return { width, height }
+  })
 }
 
 // ─── 工具函数 ─────────────────────────────────────────────────────────────────
