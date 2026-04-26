@@ -14,7 +14,6 @@
       <thead>
         <tr>
           <th>环境名称</th>
-          <th>浏览器可执行文件</th>
           <th>代理</th>
           <th>时区</th>
           <th>创建时间</th>
@@ -23,14 +22,13 @@
       </thead>
       <tbody>
         <tr v-if="envList.length === 0">
-          <td colspan="6" class="empty-tip">暂无环境，点击「新建环境」创建</td>
+          <td colspan="5" class="empty-tip">暂无环境，点击「新建环境」创建</td>
         </tr>
         <tr v-for="env in envList" :key="env.id">
           <td style="font-weight:500">{{ env.name }}</td>
-          <td style="font-size:12px;color:var(--text-muted)">{{ env.exePath || '默认' }}</td>
           <td style="font-size:12px;color:var(--text-muted)">{{ proxyDisplay(env) }}</td>
           <td style="font-size:12px;color:var(--text-muted)">{{ env.timezone || '—' }}</td>
-          <td style="font-size:12px;color:var(--text-muted)">{{ env.createdAt }}</td>
+          <td style="font-size:12px;color:var(--text-muted)">{{ env.created_at }}</td>
           <td>
             <div class="table-actions">
               <button class="btn btn--text" @click="launch(env)">启动</button>
@@ -44,29 +42,32 @@
 </template>
 
 <script setup>
-import { useEnvStore } from '../../composables/useEnvStore'
+import { ref, onMounted } from 'vue'
 import { addLog } from '../../composables/useLogs'
 
-const { envList, remove } = useEnvStore()
+const envList = ref([])
+
+async function loadEnvs() {
+  envList.value = await window.ruyi.dbListEnvs()
+}
 
 function proxyDisplay(env) {
-  if (!env.proxyHost) return '无'
-  return `${env.proxyHost}:${env.proxyPort}`
+  if (env.proxy_type === 'none' || !env.proxy_host) return '无'
+  return `${env.proxy_type.toUpperCase()} ${env.proxy_host}:${env.proxy_port}`
 }
 
 async function launch(env) {
   addLog(`正在启动环境: ${env.name}`, 'info')
-  const res = await window.ruyi.launch({
-    exe_path:  env.exePath  || undefined,
-    profile:   env.profileDir || undefined,
-    fpfile:    env.fpfilePath || undefined,
-  })
+  const res = await window.ruyi.launch({ envId: env.id })
   addLog(res.ok ? `环境启动成功: ${env.name}` : `启动失败: ${res.error}`, res.ok ? 'ok' : 'err')
 }
 
-function del(id) {
+async function del(id) {
   const env = envList.value.find(e => e.id === id)
-  remove(id)
+  await window.ruyi.dbDeleteEnv(id)
   if (env) addLog(`环境已删除: ${env.name}`, 'info')
+  await loadEnvs()
 }
+
+onMounted(loadEnvs)
 </script>

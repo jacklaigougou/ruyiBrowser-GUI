@@ -32,4 +32,21 @@ contextBridge.exposeInMainWorld('ruyi', {
   // 配置
   setProxy: (sessionId, proxy) => ipcRenderer.invoke('ruyi:set-proxy', { sessionId, proxy }),
   setGeolocation: (sessionId, lat, lon) => ipcRenderer.invoke('ruyi:set-geolocation', { sessionId, lat, lon }),
+
+  // 环境数据库 CRUD
+  dbListEnvs: () => ipcRenderer.invoke('ruyi:db-list-envs'),
+  dbCreateEnv: (env) => ipcRenderer.invoke('ruyi:db-create-env', env),
+  dbDeleteEnv: (id) => ipcRenderer.invoke('ruyi:db-delete-env', id),
+
+  // foxprint.exe 下载
+  downloadFoxprint: () => ipcRenderer.invoke('ruyi:download-foxprint'),
+  foxprintPath: () => ipcRenderer.invoke('ruyi:foxprint-path'),
+  openFoxprintFolder: () => ipcRenderer.invoke('ruyi:open-foxprint-folder'),
+  onDownloadProgress: (cb) => {
+    ipcRenderer.on('ruyi:download-progress', (_e, data) => cb(data))
+  },
+  offDownloadProgress: () => {
+    ipcRenderer.removeAllListeners('ruyi:download-progress')
+  },
 })
+

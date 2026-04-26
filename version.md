@@ -2,7 +2,57 @@
 
 ## [Unreleased]
 
-### feat: redesign create-env page with tab layout + summary panel
+### v0.3.1 — ui: card layout polish + label/WebRTC fixes
+- `TabBasic.vue`：三字段合并为一张卡片；「fox浏览器」标签改为「浏览器」；移除字数计数显示
+- `TabProxy.vue`：WebRTC 移回代理信息 Tab，改为4个可填写 IP 输入框（本地/公网 IPv4/IPv6）；代理字段与 WebRTC 字段分两张卡片
+- `TabFingerprint.vue`：移除 WebRTC 区块；字段分3张卡片（地区语言 / UA+WebGL / 硬件噪音）
+- `TabAdvanced.vue`：字段合入一张卡片
+- `style.css`：
+  - 新增 `.form-card`：卡片容器（8px圆角、双层阴影、`0 20px` 内边距）
+  - `.field-label`：改为左对齐，宽度收至 56px
+  - `.field-row` gap 从 24px 收至 12px
+  - 卡片内分割线已移除
+
+
+- `create/index.vue`：重构为薄壳组件，用 `v-show` 加载4个 Tab 子组件，保留概要面板和 save 逻辑；form 增加 `timezoneMode / geoMode / geoLat / geoLon / geoPermission / languageMode / uiLangMode / uiLang / resolutionMode / resolutionPreset / fontMode / noise*` 字段
+- 新增 `create/TabBasic.vue`：基础设置（名称、foxprint 下载、备注）
+- 新增 `create/TabProxy.vue`：代理信息（类型/Host/Port/用户名/密码），WebRTC 已移至指纹配置
+- 新增 `create/TabFingerprint.vue`：指纹配置，仿截图风格重设计
+  - WebRTC：5 选项分段按钮（转发/替换/真实/禁用/代理UDP）
+  - 时区/地理位置/语言/界面语言：分段按钮 + 条件输入框
+  - 分辨率：随机/预定义/自定义三态，预定义时显示下拉
+  - 字体：默认/自定义
+  - User-Agent / Canvas种子 / WebGL字段
+  - 硬件噪音：Canvas/WebGL图像/AudioContext/媒体设备/ClientRects/SpeechVoices — iOS 风格 toggle 开关
+- 新增 `create/TabAdvanced.vue`：高级设置（CPU核心、屏幕分辨率、WebDriver标记）
+- `style.css`：
+  - `.field-label` 改为 `color: var(--accent)`（蓝色，匹配截图）
+  - 新增 `.toggle` / `.toggle-slider` / `.toggle-wrap`：iOS 风格开关样式
+  - 新增 `.noise-row`：硬件噪音开关横向排列容器
+
+### feat: SQLite persistence + foxprint auto-download + fpfile generation
+- `src/main/main.js`：
+  - 新增 `initDatabase()`：在 `data/ruyipage.db` 初始化 environments 表（better-sqlite3，WAL模式）
+  - `ruyi:launch` handler：当传入 `envId` 时，从数据库读取环境配置，临时生成 fpfile，启动后自动删除
+  - 新增 `ruyi:db-list-envs`、`ruyi:db-create-env`、`ruyi:db-delete-env` IPC handlers
+  - 新增 `ruyi:download-foxprint`：自动查询 GitHub Releases API，下载最新 .exe 到 `data/foxprint/foxprint.exe`，实时发送 `ruyi:download-progress` 进度事件
+  - 新增 `ruyi:foxprint-path`：检测 foxprint.exe 是否已存在
+  - 新增 `buildFpfileLines(env)`：根据数据库环境配置生成 fpfile key:value 行
+  - 新增 `fetchJson()` / `downloadFile()`：HTTP/HTTPS 工具函数，支持 301/302 重定向
+- `src/preload/preload.js`：暴露 `dbListEnvs`、`dbCreateEnv`、`dbDeleteEnv`、`downloadFoxprint`、`foxprintPath`、`onDownloadProgress`、`offDownloadProgress`
+- `src/renderer/views/environment/create/index.vue`：
+  - 基础设置：移除 exePath / profileDir / fpfilePath 手动输入字段
+  - 新增 foxprint.exe 状态显示（已就绪 / 未下载）+ 下载按钮 + 进度条
+  - 保存改为调用 `window.ruyi.dbCreateEnv()`，写入 SQLite
+- `src/renderer/views/environment/index.vue`：
+  - 列表改为 `window.ruyi.dbListEnvs()` 从数据库加载
+  - 启动改为 `window.ruyi.launch({ envId })` 传 ID
+  - 删除改为 `window.ruyi.dbDeleteEnv(id)` 后刷新列表
+  - 移除浏览器可执行文件列（改由内部管理）
+- `src/renderer/style.css`：新增 `.foxprint-status`、`.foxprint-ok`、`.foxprint-warn`、`.download-progress`、`.download-bar`、`.download-bar-fill`、`.download-pct`
+- `package.json`：新增 `postinstall` 脚本自动 rebuild better-sqlite3；`better-sqlite3 ^12.9.0` 加入 dependencies；`@electron/rebuild ^4.0.4` 加入 devDependencies
+
+
 - `create/index.vue`：改为顶部 Tab 导航 + 左表单 + 右概要两栏布局
   - Tab：基础设置 / 代理信息 / 指纹配置 / 高级设置
   - 代理信息：代理类型切换 + WebRTC 三态选项组
