@@ -4,7 +4,13 @@
 
 ---
 
-## [0.1.0] - 2026-04-27
+## [0.2.0] - 2026-04-27
+
+### docs: add version.md with full changelog
+- 新增 `version.md`，补录项目初始化至今所有提交的改动记录
+- 建立 `[Unreleased]` 区块规范，每次 commit 前在此追加变更
+
+
 
 ### b72f290 — feat: remove unused views, build environment management page
 - 删除 `views/browser`、`views/dashboard`、`views/sessions` 目录
