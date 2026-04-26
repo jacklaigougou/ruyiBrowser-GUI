@@ -1,20 +1,16 @@
 import { createApp } from 'vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
 import App from './App.vue'
-import Dashboard from './views/Dashboard.vue'
-import Sessions from './views/Sessions.vue'
-import Browser from './views/Browser.vue'
-import Settings from './views/Settings.vue'
 import './style.css'
 
 const router = createRouter({
   history: createWebHashHistory(),
   routes: [
     { path: '/', redirect: '/dashboard' },
-    { path: '/dashboard', component: Dashboard },
-    { path: '/sessions', component: Sessions },
-    { path: '/browser', component: Browser },
-    { path: '/settings', component: Settings },
+    { path: '/dashboard', component: () => import('./views/dashboard/index.vue') },
+    { path: '/sessions',  component: () => import('./views/sessions/index.vue') },
+    { path: '/browser',   component: () => import('./views/browser/index.vue') },
+    { path: '/settings',  component: () => import('./views/settings/index.vue') },
   ],
 })
 

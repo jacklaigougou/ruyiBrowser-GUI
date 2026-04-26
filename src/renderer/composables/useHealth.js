@@ -1,20 +1,15 @@
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref } from 'vue'
 
+// 模块单例，整个应用共享同一份状态
 const online = ref(false)
 const sessionCount = ref('—')
 
-async function checkHealth() {
+export function useHealthStore() {
+  return { online, sessionCount }
+}
+
+export async function refreshHealth() {
   const res = await window.ruyi.health()
   online.value = res.ok
   if (res.ok) sessionCount.value = res.data?.sessions ?? 0
-}
-
-export function useHealth() {
-  let timer
-  onMounted(() => {
-    checkHealth()
-    timer = setInterval(checkHealth, 5000)
-  })
-  onUnmounted(() => clearInterval(timer))
-  return { online, sessionCount, checkHealth }
 }

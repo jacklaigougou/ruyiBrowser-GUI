@@ -6,7 +6,7 @@
   "scripts": {
     "dev:vite": "vite src/renderer",
     "dev": "concurrently \"npm run dev:vite\" \"wait-on http://localhost:5173 && electron . --dev\"",
-    "build:renderer": "vite build src/renderer",
+    "build:renderer": "vite build",
     "build": "npm run build:renderer && electron-builder",
     "preview": "vite preview src/renderer"
   },
