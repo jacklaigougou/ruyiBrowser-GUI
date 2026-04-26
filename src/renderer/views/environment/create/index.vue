@@ -1,5 +1,15 @@
 <template>
   <div class="create-page">
+    <!-- fpfile 预览弹窗 -->
+    <div v-if="fpfilePreview" class="modal" @click.self="fpfilePreview = null">
+      <div class="modal-box" style="width:600px;max-height:80vh">
+        <h2>fpfile 预览</h2>
+        <pre style="font-size:12px;font-family:Consolas,monospace;background:#fafafa;border:1px solid var(--border);border-radius:var(--radius);padding:12px;overflow-y:auto;max-height:55vh;white-space:pre-wrap;word-break:break-all;color:var(--text)">{{ fpfilePreview }}</pre>
+        <div class="modal-actions">
+          <button class="btn btn--primary" @click="fpfilePreview = null">关闭</button>
+        </div>
+      </div>
+    </div>
     <!-- 页头 -->
     <div class="create-header">
       <div class="create-header-left">
@@ -11,6 +21,7 @@
       <div style="display:flex;gap:8px">
         <button class="btn" @click="$router.back()">取消</button>
         <button class="btn btn--primary" @click="save">保存</button>
+        <button class="btn" @click="previewFpfile">查看</button>
       </div>
     </div>
 
@@ -65,12 +76,13 @@ import TabFingerprint from './TabFingerprint.vue'
 import TabAdvanced from './TabAdvanced.vue'
 
 const router = useRouter()
+const fpfilePreview = ref(null)
 
 const tabs = [
   { key: 'basic',       label: '基础设置' },
   { key: 'proxy',       label: '代理信息' },
   { key: 'fingerprint', label: '指纹配置' },
-  { key: 'advanced',    label: '高级设置' },
+  { key: 'advanced',    label: 'WebGL 设置' },
 ]
 const activeTab = ref('basic')
 
@@ -96,8 +108,11 @@ const form = ref({
   // User-Agent / Canvas / WebGL
   userAgent: '',
   canvasSeed: null,
-  webglVendor: '', webglRenderer: '',
-  webglUnmaskedVendor: '', webglUnmaskedRenderer: '', webglMaxTexture: null,
+  webglVendor: '', webglRenderer: '', webglVersion: '', webglGlslVersion: '',
+  webglUnmaskedVendor: '', webglUnmaskedRenderer: '',
+  webglMaxTexture: null, webglMaxCubeMapTextureSize: null,
+  webglMaxTextureImageUnits: null, webglMaxVertexAttribs: null,
+  webglAliasedPointSizeMax: null, webglMaxViewportDim: null,
   // 硬件噪音
   noiseCanvas: false, noiseWebgl: false,
   noiseAudio: true, noiseMedia: true, noiseClientRects: true, noiseSpeech: true,
@@ -130,10 +145,7 @@ const resolutionLabel = computed(() => {
   return '自定义'
 })
 
-async function save() {
-  if (!form.value.name.trim()) { activeTab.value = 'basic'; return alert('请填写环境名称') }
-
-  // 解析分辨率
+function buildEnv() {
   let screenW = form.value.screenW
   let screenH = form.value.screenH
   if (form.value.resolutionMode === 'random') { screenW = null; screenH = null }
@@ -141,8 +153,7 @@ async function save() {
     const [w, h] = form.value.resolutionPreset.split('x').map(Number)
     screenW = w; screenH = h
   }
-
-  const env = {
+  return {
     name: form.value.name,
     remark: form.value.remark,
     proxyType: form.value.proxyType,
@@ -162,15 +173,32 @@ async function save() {
     canvasSeed: form.value.canvasSeed ?? null,
     webglVendor: form.value.webglVendor,
     webglRenderer: form.value.webglRenderer,
+    webglVersion: form.value.webglVersion,
+    webglGlslVersion: form.value.webglGlslVersion,
     webglUnmaskedVendor: form.value.webglUnmaskedVendor,
     webglUnmaskedRenderer: form.value.webglUnmaskedRenderer,
     webglMaxTexture: form.value.webglMaxTexture ?? null,
+    webglMaxCubeMapTextureSize: form.value.webglMaxCubeMapTextureSize ?? null,
+    webglMaxTextureImageUnits: form.value.webglMaxTextureImageUnits ?? null,
+    webglMaxVertexAttribs: form.value.webglMaxVertexAttribs ?? null,
+    webglAliasedPointSizeMax: form.value.webglAliasedPointSizeMax ?? null,
+    webglMaxViewportDim: form.value.webglMaxViewportDim ?? null,
     cpuCores: form.value.cpuCores ?? null,
     screenW: screenW ?? null,
     screenH: screenH ?? null,
     webdriver: form.value.webdriver,
   }
+}
 
+async function previewFpfile() {
+  const env = buildEnv()
+  fpfilePreview.value = await window.ruyi.previewFpfile(env)
+}
+
+async function save() {
+  if (!form.value.name.trim()) { activeTab.value = 'basic'; return alert('请填写环境名称') }
+
+  const env = buildEnv()
   const result = await window.ruyi.dbCreateEnv(env)
   if (result.ok) {
     addLog(`环境已创建: ${form.value.name}`, 'ok')

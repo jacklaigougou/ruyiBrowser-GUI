@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+### v0.3.9 — feat: fpfile 预览、WebGL设置重构、fpfile键名修正
+
+- `TabAdvanced.vue`：重命名为 WebGL 设置，所有 WebGL 字段改为 ComboInput 下拉输入；新增「一键设置」按钮，随机从 6 款 GPU 预设（AMD/NVIDIA/Intel）中选一套并填入所有 WebGL 参数
+- `index.vue`：Tab「高级设置」改名为「WebGL 设置」；header 新增「查看」按钮，点击弹窗预览最终生成的 fpfile 内容
+- `src/main/main.js`：
+  - 数据库表新增列：`webgl_version`、`webgl_glsl_version`、`webgl_max_cube_map`、`webgl_max_texture_units`、`webgl_max_vertex_attribs`、`webgl_aliased_point_max`、`webgl_max_viewport_dim`
+  - INSERT 语句同步更新
+  - 新增 `ruyi:preview-fpfile` IPC handler，返回 fpfile 预览文本
+  - `buildFpfileLines()` 键名全部修正为 foxprint 实际格式：`canvas`（非 canvasSeed）、`webgl.vendor/renderer/version/glsl_version/unmasked_vendor/unmasked_renderer/max_texture_size/max_cube_map_texture_size/max_texture_image_units/max_vertex_attribs/aliased_point_size_max/max_viewport_dim`、`width`/`height`（非 screenWidth/screenHeight）；新增 `httpauth.username`/`httpauth.password` 从代理凭据写入
+- `src/preload/preload.js`：暴露 `previewFpfile(env)`
+
+### v0.3.8 — feat: 指纹页重构、一键设置、硬件噪音删除、根据IP设置
+
+- `TabFingerprint.vue`：两张可折叠卡片（地区与语言 / 硬件与指纹），标题栏下加分割线；卡片二新增「一键设置」按钮（随机 CPU 核心数、Canvas 种子 0-100、User-Agent、读取真实屏幕分辨率）；删除硬件噪音卡片；「查询 IP」改名为「根据 IP 设置」；系统字体集改为下拉（windows/linux/mac）；CPU 核心数 + Canvas 种子 + 字体同行；屏幕宽高同行后接 WebDriver 按钮组；User-Agent 置末行
+- `src/main/main.js`：新增 `ruyi:screen-size` IPC handler
+- `src/preload/preload.js`：暴露 `screenSize()`
+
 ### v0.3.7 — ui: 测试连通结果改为弹窗提示
 
 - `TabProxy.vue`：测试连通成功/失败结果从行内文字改为 Modal 弹窗，点确定或遮罩关闭

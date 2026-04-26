@@ -44,9 +44,16 @@ function initDatabase() {
       canvas_seed INTEGER,
       webgl_vendor              TEXT DEFAULT '',
       webgl_renderer            TEXT DEFAULT '',
+      webgl_version             TEXT DEFAULT '',
+      webgl_glsl_version        TEXT DEFAULT '',
       webgl_unmasked_vendor     TEXT DEFAULT '',
       webgl_unmasked_renderer   TEXT DEFAULT '',
       webgl_max_texture         INTEGER,
+      webgl_max_cube_map        INTEGER,
+      webgl_max_texture_units   INTEGER,
+      webgl_max_vertex_attribs  INTEGER,
+      webgl_aliased_point_max   INTEGER,
+      webgl_max_viewport_dim    INTEGER,
       cpu_cores   INTEGER,
       screen_w    INTEGER,
       screen_h    INTEGER,
@@ -272,16 +279,20 @@ function registerIpcHandlers() {
         proxy_type, proxy_host, proxy_port, proxy_user, proxy_pass,
         webrtc_mode, local_ipv4, local_ipv6, public_ipv4, public_ipv6,
         timezone, language, font_system, user_agent,
-        canvas_seed, webgl_vendor, webgl_renderer,
+        canvas_seed, webgl_vendor, webgl_renderer, webgl_version, webgl_glsl_version,
         webgl_unmasked_vendor, webgl_unmasked_renderer, webgl_max_texture,
+        webgl_max_cube_map, webgl_max_texture_units, webgl_max_vertex_attribs,
+        webgl_aliased_point_max, webgl_max_viewport_dim,
         cpu_cores, screen_w, screen_h, webdriver
       ) VALUES (
         @name, @remark,
         @proxyType, @proxyHost, @proxyPort, @proxyUser, @proxyPass,
         @webrtcMode, @localIpv4, @localIpv6, @publicIpv4, @publicIpv6,
         @timezone, @language, @fontSystem, @userAgent,
-        @canvasSeed, @webglVendor, @webglRenderer,
+        @canvasSeed, @webglVendor, @webglRenderer, @webglVersion, @webglGlslVersion,
         @webglUnmaskedVendor, @webglUnmaskedRenderer, @webglMaxTexture,
+        @webglMaxCubeMapTextureSize, @webglMaxTextureImageUnits, @webglMaxVertexAttribs,
+        @webglAliasedPointSizeMax, @webglMaxViewportDim,
         @cpuCores, @screenW, @screenH, @webdriver
       )
     `)
@@ -335,6 +346,10 @@ function registerIpcHandlers() {
     const { screen } = require('electron')
     const { width, height } = screen.getPrimaryDisplay().size
     return { width, height }
+  })
+
+  ipcMain.handle('ruyi:preview-fpfile', (_event, env) => {
+    return buildFpfileLines(env).join('\n')
   })
 
   ipcMain.handle('ruyi:test-proxy', async (_event, { type, host, port, user, pass }) => {
@@ -447,18 +462,29 @@ function buildFpfileLines(env) {
   add('language', env.language)
   add('fontSystem', env.font_system)
   add('userAgent', env.user_agent)
-  add('canvasSeed', env.canvas_seed)
-  add('webglVendor', env.webgl_vendor)
-  add('webglRenderer', env.webgl_renderer)
-  add('webglUnmaskedVendor', env.webgl_unmasked_vendor)
-  add('webglUnmaskedRenderer', env.webgl_unmasked_renderer)
-  add('webglMaxTexture', env.webgl_max_texture)
+  add('canvas', env.canvas_seed)
+  add('webgl.vendor', env.webgl_vendor)
+  add('webgl.renderer', env.webgl_renderer)
+  add('webgl.version', env.webgl_version)
+  add('webgl.glsl_version', env.webgl_glsl_version)
+  add('webgl.unmasked_vendor', env.webgl_unmasked_vendor)
+  add('webgl.unmasked_renderer', env.webgl_unmasked_renderer)
+  add('webgl.max_texture_size', env.webgl_max_texture)
+  add('webgl.max_cube_map_texture_size', env.webgl_max_cube_map)
+  add('webgl.max_texture_image_units', env.webgl_max_texture_units)
+  add('webgl.max_vertex_attribs', env.webgl_max_vertex_attribs)
+  add('webgl.aliased_point_size_max', env.webgl_aliased_point_max)
+  add('webgl.max_viewport_dim', env.webgl_max_viewport_dim)
   add('hardwareConcurrency', env.cpu_cores)
   if (env.screen_w && env.screen_h) {
-    add('screenWidth', env.screen_w)
-    add('screenHeight', env.screen_h)
+    add('width', env.screen_w)
+    add('height', env.screen_h)
   }
   add('webdriver', env.webdriver)
+  if (env.proxy_type !== 'none' && env.proxy_user) {
+    add('httpauth.username', env.proxy_user)
+    add('httpauth.password', env.proxy_pass)
+  }
 
   // speech 语音配置：从 language 字段提取主语言代码（如 zh-CN,zh → zh-CN）
   if (env.language && env.language !== 'ip' && env.language !== 'real') {

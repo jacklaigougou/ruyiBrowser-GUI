@@ -24,7 +24,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps({
-  modelValue: String,
+  modelValue: [String, Number],
   options: { type: Array, default: () => [] },
   placeholder: String,
 })
@@ -33,9 +33,10 @@ const emit = defineEmits(['update:modelValue'])
 const open = ref(false)
 const wrapRef = ref(null)
 const inputRef = ref(null)
-const inputVal = ref(props.modelValue || '')
+const toInputString = (v) => (v == null ? '' : String(v))
+const inputVal = ref(toInputString(props.modelValue))
 
-watch(() => props.modelValue, v => { inputVal.value = v || '' })
+watch(() => props.modelValue, v => { inputVal.value = toInputString(v) })
 watch(inputVal, v => emit('update:modelValue', v))
 
 const normalizedOptions = computed(() => {
@@ -56,7 +57,7 @@ const normalizedOptions = computed(() => {
 })
 
 const filtered = computed(() => {
-  const q = inputVal.value?.trim().toLowerCase() || ''
+  const q = toInputString(inputVal.value).trim().toLowerCase()
   if (!q) return normalizedOptions.value
   const exactMatched = normalizedOptions.value.some(item => item.value.toLowerCase() === q)
   if (exactMatched) return normalizedOptions.value
