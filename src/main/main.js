@@ -50,15 +50,16 @@ function createWindow() {
     show: false,
   })
 
-  mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'))
+  mainWindow.loadFile(path.join(__dirname, '../../dist/renderer/index.html'))
+
+  if (process.argv.includes('--dev')) {
+    mainWindow.loadURL('http://localhost:5173')
+    mainWindow.webContents.openDevTools()
+  }
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.show()
   })
-
-  if (process.argv.includes('--dev')) {
-    mainWindow.webContents.openDevTools()
-  }
 }
 
 app.whenReady().then(() => {
