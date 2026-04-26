@@ -1,12 +1,23 @@
 <template>
   <div class="create-page">
     <!-- fpfile 预览弹窗 -->
-    <div v-if="fpfilePreview" class="modal" @click.self="fpfilePreview = null">
-      <div class="modal-box" style="width:600px;max-height:80vh">
-        <h2>fpfile 预览</h2>
-        <pre style="font-size:12px;font-family:Consolas,monospace;background:#fafafa;border:1px solid var(--border);border-radius:var(--radius);padding:12px;overflow-y:auto;max-height:55vh;white-space:pre-wrap;word-break:break-all;color:var(--text)">{{ fpfilePreview }}</pre>
+    <div v-if="fpfileLines" class="modal" @click.self="fpfileLines = null">
+      <div class="modal-box" style="width:620px;max-height:80vh">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <h2 style="margin:0">fpfile 预览</h2>
+          <select v-model="previewFilter" style="width:auto;min-width:130px;font-size:13px">
+            <option value="all">全部</option>
+            <option value="region">地区与语言</option>
+            <option value="webgl">WebGL</option>
+            <option value="hardware">指纹与硬件</option>
+            <option value="proxy">代理认证</option>
+            <option value="speech">语音</option>
+            <option value="webrtc">WebRTC</option>
+          </select>
+        </div>
+        <pre style="font-size:12px;font-family:Consolas,monospace;background:#fafafa;border:1px solid var(--border);border-radius:var(--radius);padding:12px;overflow-y:auto;max-height:55vh;white-space:pre-wrap;word-break:break-all;color:var(--text)">{{ filteredPreview }}</pre>
         <div class="modal-actions">
-          <button class="btn btn--primary" @click="fpfilePreview = null">关闭</button>
+          <button class="btn btn--primary" @click="fpfileLines = null">关闭</button>
         </div>
       </div>
     </div>
@@ -76,7 +87,26 @@ import TabFingerprint from './TabFingerprint.vue'
 import TabAdvanced from './TabAdvanced.vue'
 
 const router = useRouter()
-const fpfilePreview = ref(null)
+const fpfileLines = ref(null)
+const previewFilter = ref('all')
+
+const FILTER_PREFIXES = {
+  region:   ['timezone:', 'language:'],
+  webgl:    ['webgl.'],
+  hardware: ['canvas:', 'hardwareConcurrency:', 'width:', 'height:', 'fontSystem:', 'userAgent:', 'webdriver:'],
+  proxy:    ['httpauth.'],
+  speech:   ['speech.'],
+  webrtc:   ['webrtcPolicy:', 'webrtcLocalIp4:', 'webrtcPublicIp4:'],
+}
+
+const filteredPreview = computed(() => {
+  if (!fpfileLines.value) return ''
+  if (previewFilter.value === 'all') return fpfileLines.value.join('\n')
+  const prefixes = FILTER_PREFIXES[previewFilter.value] || []
+  return fpfileLines.value
+    .filter(line => prefixes.some(p => line.startsWith(p)))
+    .join('\n') || '（无匹配参数）'
+})
 
 const tabs = [
   { key: 'basic',       label: '基础设置' },
@@ -192,7 +222,9 @@ function buildEnv() {
 
 async function previewFpfile() {
   const env = buildEnv()
-  fpfilePreview.value = await window.ruyi.previewFpfile(env)
+  const text = await window.ruyi.previewFpfile(env)
+  fpfileLines.value = text.split('\n').filter(l => l.trim())
+  previewFilter.value = 'all'
 }
 
 async function save() {

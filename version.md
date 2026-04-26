@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### v0.4.1 — fix: fpfile预览数据缺失修正、预览加分类下拉过滤
+
+- `src/main/main.js`：`ruyi:preview-fpfile` handler 新增 camelCase→snake_case 字段映射，修复前端传入字段名与 `buildFpfileLines()` 期望字段名不一致导致 WebGL/canvas/屏幕宽高等参数全部缺失的问题
+- `index.vue`：
+  - 预览弹窗标题行右侧新增分类下拉（全部 / 地区与语言 / WebGL / 指纹与硬件 / 代理认证 / 语音 / WebRTC），实时按前缀过滤显示的 fpfile 行
+  - `fpfileLines` 存原始行数组，`filteredPreview` computed 按分类过滤后渲染
+
+### v0.3.10 — feat: 根据IP设置读取代理IP
+
+- `TabFingerprint.vue`：点击「根据 IP 设置」时，若代理页已填写代理类型（非直连）和代理 Host，则将代理 IP 传入 `queryIp()` 进行查询，否则查本机 IP
+
 ### v0.3.9 — feat: fpfile 预览、WebGL设置重构、fpfile键名修正
 
 - `TabAdvanced.vue`：重命名为 WebGL 设置，所有 WebGL 字段改为 ComboInput 下拉输入；新增「一键设置」按钮，随机从 6 款 GPU 预设（AMD/NVIDIA/Intel）中选一套并填入所有 WebGL 参数

@@ -189,7 +189,8 @@ async function queryIpInfo() {
   querying.value = true
   queryError.value = ''
   try {
-    const result = await window.ruyi.queryIp()
+    const ip = (props.form.proxyType !== 'none' && props.form.proxyHost) ? props.form.proxyHost : ''
+    const result = await window.ruyi.queryIp(ip)
     if (result.timezone) {
       props.form.timezoneMode = 'custom'
       props.form.timezone = result.timezone

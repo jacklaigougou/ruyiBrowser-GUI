@@ -349,7 +349,36 @@ function registerIpcHandlers() {
   })
 
   ipcMain.handle('ruyi:preview-fpfile', (_event, env) => {
-    return buildFpfileLines(env).join('\n')
+    // 前端传来 camelCase，转成 buildFpfileLines 期望的 snake_case
+    const row = {
+      timezone:               env.timezone,
+      language:               env.language,
+      font_system:            env.fontSystem,
+      user_agent:             env.userAgent,
+      canvas_seed:            env.canvasSeed,
+      webgl_vendor:           env.webglVendor,
+      webgl_renderer:         env.webglRenderer,
+      webgl_version:          env.webglVersion,
+      webgl_glsl_version:     env.webglGlslVersion,
+      webgl_unmasked_vendor:  env.webglUnmaskedVendor,
+      webgl_unmasked_renderer:env.webglUnmaskedRenderer,
+      webgl_max_texture:      env.webglMaxTexture,
+      webgl_max_cube_map:     env.webglMaxCubeMapTextureSize,
+      webgl_max_texture_units:env.webglMaxTextureImageUnits,
+      webgl_max_vertex_attribs:env.webglMaxVertexAttribs,
+      webgl_aliased_point_max: env.webglAliasedPointSizeMax,
+      webgl_max_viewport_dim: env.webglMaxViewportDim,
+      cpu_cores:              env.cpuCores,
+      screen_w:               env.screenW,
+      screen_h:               env.screenH,
+      webdriver:              env.webdriver,
+      proxy_type:             env.proxyType,
+      proxy_user:             env.proxyUser,
+      proxy_pass:             env.proxyPass,
+      webrtc_mode:            env.webrtcMode,
+      public_ipv4:            env.publicIpv4,
+    }
+    return buildFpfileLines(row).join('\n')
   })
 
   ipcMain.handle('ruyi:test-proxy', async (_event, { type, host, port, user, pass }) => {
