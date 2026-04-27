@@ -217,10 +217,16 @@ function registerIpcHandlers() {
         const fpfilePath = path.join(envDir, 'fpfile.txt')
         const profileDir = getDataDir('profiles', String(env.id))
         if (!fs.existsSync(profileDir)) fs.mkdirSync(profileDir, { recursive: true })
-        // 代理配置写入到 profile/user.js（foxprint 启动时会读取 profile 目录）
+
+        // 代理配置写入到 profile/user.js
         const userJsFrom = path.join(envDir, 'user.js')
         const userJsTo = path.join(profileDir, 'user.js')
         if (fs.existsSync(userJsFrom)) fs.copyFileSync(userJsFrom, userJsTo)
+
+        // SOCKS5 代理：通过 Firefox 扩展实现
+        if (env.proxy_type === 'socks5' && env.proxy_host) {
+          installSocks5Extension(profileDir, env.proxy_host, env.proxy_port, env.proxy_user, env.proxy_pass)
+        }
 
         // 直接按 foxprint 文档方式启动，不经过 Python bridge
         const args = [
@@ -749,4 +755,136 @@ function downloadFile(url, dest, onProgress) {
     }
     doGet(url)
   })
+}
+
+// ─── Firefox 扩展：SOCKS5 代理注入 ───────────────────────────────────────────
+// 动态生成一个带有硬编码代理参数的 xpi（zip），安装到 profile/extensions/
+function installSocks5Extension(profileDir, host, port, user, pass) {
+  const extId = 'ruyi-proxy@ruyipage.local'
+
+  const manifest = JSON.stringify({
+    manifest_version: 2,
+    name: 'ruyi-proxy',
+    version: '1.0',
+    permissions: ['proxy', '<all_urls>'],
+    background: { scripts: ['background.js'] },
+    browser_specific_settings: { gecko: { id: extId } },
+  })
+
+  const background = `
+browser.proxy.onRequest.addListener(
+  () => ({
+    type: 'socks',
+    host: ${JSON.stringify(host)},
+    port: ${Number(port)},
+    username: ${JSON.stringify(user || '')},
+    password: ${JSON.stringify(pass || '')},
+    proxyDNS: true,
+  }),
+  { urls: ['<all_urls>'] }
+);
+`
+
+  // 写入 user.js：关闭签名验证，允许未签名扩展
+  const userJsPath = path.join(profileDir, 'user.js')
+  let userJsContent = fs.existsSync(userJsPath) ? fs.readFileSync(userJsPath, 'utf8') : ''
+  if (!userJsContent.includes('xpinstall.signatures.required')) {
+    userJsContent += '\nuser_pref("xpinstall.signatures.required", false);\n'
+    fs.writeFileSync(userJsPath, userJsContent, 'utf8')
+  }
+
+  // 生成 xpi（zip 格式）
+  const xpiPath = path.join(profileDir, 'extensions', `${extId}.xpi`)
+  const extDir = path.dirname(xpiPath)
+  if (!fs.existsSync(extDir)) fs.mkdirSync(extDir, { recursive: true })
+
+  const xpiBuf = buildZip([
+    { name: 'manifest.json', content: Buffer.from(manifest, 'utf8') },
+    { name: 'background.js', content: Buffer.from(background, 'utf8') },
+  ])
+  fs.writeFileSync(xpiPath, xpiBuf)
+}
+
+// 构建最小 zip 包（store 模式，无压缩）
+function buildZip(files) {
+  const parts = []
+  const centralDir = []
+  let offset = 0
+
+  for (const { name, content } of files) {
+    const nameBuf = Buffer.from(name, 'utf8')
+    const crc = crc32(content)
+    const now = dosDateTime()
+
+    // Local file header
+    const local = Buffer.alloc(30 + nameBuf.length + content.length)
+    local.writeUInt32LE(0x04034b50, 0)   // signature
+    local.writeUInt16LE(20, 4)            // version needed
+    local.writeUInt16LE(0, 6)             // flags
+    local.writeUInt16LE(0, 8)             // compression (store)
+    local.writeUInt16LE(now.time, 10)
+    local.writeUInt16LE(now.date, 12)
+    local.writeUInt32LE(crc, 14)
+    local.writeUInt32LE(content.length, 18)
+    local.writeUInt32LE(content.length, 22)
+    local.writeUInt16LE(nameBuf.length, 26)
+    local.writeUInt16LE(0, 28)
+    nameBuf.copy(local, 30)
+    content.copy(local, 30 + nameBuf.length)
+    parts.push(local)
+
+    // Central directory entry
+    const cent = Buffer.alloc(46 + nameBuf.length)
+    cent.writeUInt32LE(0x02014b50, 0)
+    cent.writeUInt16LE(20, 4)
+    cent.writeUInt16LE(20, 6)
+    cent.writeUInt16LE(0, 8)
+    cent.writeUInt16LE(0, 10)
+    cent.writeUInt16LE(now.time, 12)
+    cent.writeUInt16LE(now.date, 14)
+    cent.writeUInt32LE(crc, 16)
+    cent.writeUInt32LE(content.length, 20)
+    cent.writeUInt32LE(content.length, 24)
+    cent.writeUInt16LE(nameBuf.length, 28)
+    cent.writeUInt16LE(0, 30)
+    cent.writeUInt16LE(0, 32)
+    cent.writeUInt16LE(0, 34)
+    cent.writeUInt16LE(0, 36)
+    cent.writeUInt32LE(0, 38)
+    cent.writeUInt32LE(offset, 42)
+    nameBuf.copy(cent, 46)
+    centralDir.push(cent)
+
+    offset += local.length
+  }
+
+  const centralBuf = Buffer.concat(centralDir)
+  const eocd = Buffer.alloc(22)
+  eocd.writeUInt32LE(0x06054b50, 0)
+  eocd.writeUInt16LE(0, 4)
+  eocd.writeUInt16LE(0, 6)
+  eocd.writeUInt16LE(files.length, 8)
+  eocd.writeUInt16LE(files.length, 10)
+  eocd.writeUInt32LE(centralBuf.length, 12)
+  eocd.writeUInt32LE(offset, 16)
+  eocd.writeUInt16LE(0, 20)
+
+  return Buffer.concat([...parts, centralBuf, eocd])
+}
+
+function crc32(buf) {
+  let crc = 0xFFFFFFFF
+  for (let i = 0; i < buf.length; i++) {
+    crc ^= buf[i]
+    for (let j = 0; j < 8; j++) crc = (crc >>> 1) ^ (crc & 1 ? 0xEDB88320 : 0)
+  }
+  return (crc ^ 0xFFFFFFFF) >>> 0
+}
+
+function dosDateTime() {
+  const d = new Date()
+  return {
+    time: (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1),
+    date: ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate(),
+  }
 }

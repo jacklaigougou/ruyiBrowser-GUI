@@ -2,7 +2,17 @@
 
 ## [Unreleased]
 
-### v0.5.4 — revert: 撤销代理修改，回到 v0.5.0 UI 美化版本
+### v0.5.5 — feat: Firefox 扩展实现 SOCKS5 代理注入
+
+- `src/main/main.js`：
+  - 新增 `installSocks5Extension(profileDir, host, port, user, pass)`：SOCKS5 环境启动时动态生成带有硬编码代理参数的 xpi 扩展，安装到 `profile/extensions/` 目录
+  - 新增 `buildZip(files)`：纯 Node.js 内置实现最小 zip 包（store 模式，无外部依赖）
+  - 新增 `crc32(buf)` / `dosDateTime()`：zip 所需的 CRC32 校验和 DOS 时间戳
+  - `user.js` 追加 `xpinstall.signatures.required: false` 允许未签名扩展
+  - 扩展使用 `browser.proxy.onRequest` API，代理参数硬编码在 background.js 中，支持用户名密码认证和远端 DNS 解析
+- `src/ext-src/`：扩展源码模板（manifest.json + background.js）
+
+
 
 - `src/main/main.js`：撤销 v0.5.1/v0.5.2/v0.5.3 的代理相关修改，恢复到 v0.5.0（UI 美化）之后的状态
 
