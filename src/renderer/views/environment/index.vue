@@ -99,7 +99,7 @@ async function loadEnvs() {
 }
 
 function proxyDisplay(env) {
-  if (env.proxy_type === 'none' || !env.proxy_host) return '无'
+  if (env.proxy_type === 'none' || !env.proxy_host) return '本地直连'
   return `${env.proxy_type.toUpperCase()} ${env.proxy_host}:${env.proxy_port}`
 }
 

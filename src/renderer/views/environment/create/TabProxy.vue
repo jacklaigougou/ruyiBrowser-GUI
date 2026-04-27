@@ -91,6 +91,10 @@
             </div>
             <span v-if="form.webrtcMode === 'proxy'" style="font-size:12px;color:var(--text-muted);margin-top:6px;display:block">
               将自动使用代理 IP 配置 WebRTC 公网地址
+              <template v-if="form.proxyHost">
+                — 当前代理 IP：<span style="color:var(--accent);font-weight:600">{{ form.proxyHost }}</span>
+              </template>
+              <span v-else style="color:var(--danger)">（代理页未填写 Host）</span>
             </span>
           </div>
         </div>

@@ -2,7 +2,14 @@
 
 ## [Unreleased]
 
-### v0.5.5 — feat: SOCKS5 本地 HTTP 桥接、环境文件检查、代理文档补充
+### v0.5.6 — ui: 界面优化、README 更新、安装说明弹窗
+
+- `src/renderer/views/environment/index.vue`：无代理环境代理列显示改为「本地直连」
+- `src/renderer/views/environment/create/TabProxy.vue`：WebRTC「使用代理」模式下显示当前代理 IP，未填写时提示
+- `src/renderer/views/environment/create/TabBasic.vue`：浏览器行新增「说明」按钮，弹窗说明下载需科学上网、默认路径安装、冲突时删除旧版本
+- `README.md`：相关项目从表格改为列表风格；界面预览替换为新截图（env-list/env-proxy/env-fingerprint/env-webgl）；新增配套项目章节
+- `docs/screenshots/`：新增 `env-proxy.png`、`env-webgl.png`，更新 `env-list.png`、`env-fingerprint.png`
+
 
 - `src/main/main.js`：
   - 新增 SOCKS5 -> 本地 HTTP 代理桥接能力（`127.0.0.1` 随机端口），浏览器端走 HTTP，本地再转发到上游 SOCKS5（支持用户名密码）

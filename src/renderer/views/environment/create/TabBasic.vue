@@ -1,5 +1,20 @@
 <template>
   <div>
+    <!-- 安装说明弹窗 -->
+    <div v-if="showGuide" class="modal" @click.self="showGuide = false">
+      <div class="modal-box" style="width:420px">
+        <h2 style="margin:0 0 16px">浏览器安装说明</h2>
+        <ol style="padding-left:20px;line-height:2;font-size:14px;color:var(--text)">
+          <li>🌐 浏览器需要从 GitHub 下载，请确保网络可以访问 GitHub（需科学上网）。下载完成后请<strong>手动运行安装包</strong>完成安装。</li>
+          <li>📁 安装时请使用<strong>默认路径</strong>，不要自定义安装目录，否则程序无法自动找到浏览器。</li>
+          <li>🗑️ 如果下载安装后仍无法启动，请先<strong>卸载并删除</strong>本机已有的 Firefox / foxprint 浏览器，文件路径冲突会导致识别失败。</li>
+        </ol>
+        <div class="modal-actions">
+          <button class="btn btn--primary" @click="showGuide = false">我知道了</button>
+        </div>
+      </div>
+    </div>
+
     <div class="form-card">
       <div class="field-row">
         <span class="field-label">名称 <span style="color:var(--danger)">*</span></span>
@@ -24,6 +39,10 @@
             <button v-if="!downloading" class="btn" style="flex-shrink:0" @click="openFolder">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
               打开文件夹
+            </button>
+            <button v-if="!downloading" class="btn" style="flex-shrink:0" @click="showGuide = true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              说明
             </button>
           </div>
           <div v-if="downloading" class="download-progress" style="margin-top:8px">
@@ -54,6 +73,7 @@ const props = defineProps({ form: Object })
 const foxprintExists = ref(false)
 const downloading = ref(false)
 const downloadProgress = ref(0)
+const showGuide = ref(false)
 
 async function checkFoxprint() {
   foxprintExists.value = !!(await window.ruyi.foxprintPath())
