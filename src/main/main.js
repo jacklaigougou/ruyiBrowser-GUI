@@ -122,7 +122,13 @@ function stopPythonServer() {
 }
 
 function createWindow() {
-  mainWindow = new BrowserWindow({
+  const iconCandidates = [
+    path.join(app.getAppPath(), 'assets', 'icon.ico'),
+    path.join(process.resourcesPath, 'assets', 'icon.ico'),
+  ]
+  const iconPath = iconCandidates.find(p => fs.existsSync(p))
+
+  const windowOptions = {
     width: 1280,
     height: 800,
     minWidth: 900,
@@ -141,7 +147,13 @@ function createWindow() {
       symbolColor: '#606266',
       height: 40,
     },
-  })
+  }
+
+  if (iconPath) {
+    windowOptions.icon = iconPath
+  }
+
+  mainWindow = new BrowserWindow(windowOptions)
 
   if (process.argv.includes('--dev')) {
     mainWindow.loadURL('http://localhost:5173')
@@ -155,6 +167,11 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // Windows 任务栏图标归属到当前应用，避免显示为默认 Electron 图标
+  if (process.platform === 'win32') {
+    app.setAppUserModelId('com.ruyipage.electron')
+  }
+
   initDatabase()
   startPythonServer()
   createWindow()

@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### v0.4.9 — feat: 图标更新为如意1.svg、任务栏图标修复
+
+- `make-icon.js`：重构为支持命令行参数指定 SVG 源文件，使用 `png-to-ico` ESM 导入修复兼容性
+- `src/main/main.js`：`createWindow()` 新增图标路径自动检测并绑定到窗口；`app.whenReady()` 中设置 `appUserModelId` 修复 Windows 任务栏显示默认 Electron 图标问题
+- `assets/`：更新为如意1.svg 渲染的多尺寸图标（16/32/48/64/128/256px）
+
 ### v0.4.7 — fix+feat: 打包路径修复、自定义图标
 
 - `src/main/main.js`：
