@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+### v0.4.5 — feat: 环境文件持久化 + 启动修复
+
+- `src/main/main.js`：
+  - 新增 `getEnvDir(envId)`：环境文件目录固定为 `data/envs/<id>/`
+  - 新增 `writeEnvFiles(env)`：创建/更新环境时同步写 `fpfile.txt`；有代理写完整 `user.js`（host/port/ssl），无代理写 `proxy.type=0` 清除残留
+  - 新增 `deleteEnvFiles(envId)`：删除环境时递归删除整个目录
+  - `ruyi:db-create-env`：insert 后立即调用 `writeEnvFiles`
+  - `ruyi:db-update-env`：update 后重新读 DB 覆盖调用 `writeEnvFiles`
+  - `ruyi:db-delete-env`：DELETE 后调用 `deleteEnvFiles`
+  - `ruyi:launch`：启动前调用 `writeEnvFiles` 保证文件最新；将 `user.js` 从 `data/envs/<id>/` 复制到 Firefox profile 目录；改为直接 `spawn(foxprintPath, ['--fpfile=...', '--profile=...'])` 启动，不再经过 Python bridge；移除旧的临时 fpfile 生成与删除逻辑
+  - 新增 `resolveInstalledFoxprintPath()`：在系统安装目录自动扫描 foxprint.exe / firefox.exe
+  - 新增 `getFoxprintInstallerPath()`：返回 `data/foxprint/foxprint.exe` 路径用于错误提示
+- `python/server.py`：
+  - `api_launch`：参数名修正为 `exe_path`/`profile`/`fpfile`，对应 `set_browser_path`/`set_user_dir`/`set_fpfile`，移除未用的 `FirefoxPage` 导入
+
 ### v0.4.4 — feat: 环境修改功能
 
 - `src/main/main.js`：新增 `ruyi:db-get-env`（按 id 查单条）和 `ruyi:db-update-env`（UPDATE 全字段）IPC handler

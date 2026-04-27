@@ -32,13 +32,15 @@ def _err(msg: str):
 # ─── API 处理函数 ───────────────────────────────────────────────────────────────
 
 def api_launch(params: dict):
-    from ruyipage import FirefoxPage, FirefoxOptions, launch
+    from ruyipage import FirefoxOptions, launch
 
     opts = FirefoxOptions()
-    if params.get("browser_path"):
-        opts.set_browser_path(params["browser_path"])
-    if params.get("user_dir"):
-        opts.set_user_dir(params["user_dir"])
+    if params.get("exe_path"):
+        opts.set_browser_path(params["exe_path"])
+    if params.get("profile"):
+        opts.set_user_dir(params["profile"])
+    if params.get("fpfile"):
+        opts.set_fpfile(params["fpfile"])
     if params.get("proxy"):
         opts.set_proxy(params["proxy"])
     if params.get("headless"):
@@ -46,7 +48,7 @@ def api_launch(params: dict):
     if params.get("human_algorithm"):
         opts.set_human_algorithm(params["human_algorithm"])
 
-    page = launch(options=opts)
+    page = launch(opts)
     session_id = str(uuid.uuid4())
     sessions[session_id] = page
     return _ok({"sessionId": session_id})

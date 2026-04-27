@@ -167,38 +167,55 @@ app.on('window-all-closed', () => {
 function registerIpcHandlers() {
   // 启动浏览器会话
   ipcMain.handle('ruyi:launch', async (_event, options) => {
-    // options.envId 时：从数据库读取环境，生成临时 fpfile 后启动
-    if (options.envId) {
-      const env = db.prepare('SELECT * FROM environments WHERE id = ?').get(options.envId)
-      if (!env) return { ok: false, error: '环境不存在' }
+    try {
+      // options.envId 时：从数据库读取环境，生成临时 fpfile 后启动
+      if (options.envId) {
+        const env = db.prepare('SELECT * FROM environments WHERE id = ?').get(options.envId)
+        if (!env) return { ok: false, error: '环境不存在' }
 
-      const foxprintPath = path.join(__dirname, '../../data/foxprint/foxprint.exe')
-      if (!fs.existsSync(foxprintPath)) return { ok: false, error: '请先下载 foxprint.exe' }
+        const foxprintPath = resolveInstalledFoxprintPath()
+        if (!foxprintPath) {
+          const installerPath = getFoxprintInstallerPath()
+          const hasInstaller = fs.existsSync(installerPath)
+          return {
+            ok: false,
+            error: hasInstaller
+              ? `未检测到已安装 foxprint 程序。请先运行安装包完成安装：${installerPath}`
+              : '未检测到已安装 foxprint 程序，请先下载安装并完成安装',
+          }
+        }
 
-      const tmpDir = path.join(__dirname, '../../data/tmp')
-      if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true })
-      const fpfilePath = path.join(tmpDir, `env_${env.id}_${Date.now()}.fpfile`)
+        // 确保环境文件是最新的（启动前同步覆盖写一次）
+        writeEnvFiles(env)
 
-      const lines = buildFpfileLines(env)
-      fs.writeFileSync(fpfilePath, lines.join('\n'), 'utf8')
+        const envDir = getEnvDir(env.id)
+        const fpfilePath = path.join(envDir, 'fpfile.txt')
+        const profileDir = path.join(__dirname, '../../data/profiles', String(env.id))
+        if (!fs.existsSync(profileDir)) fs.mkdirSync(profileDir, { recursive: true })
+        // 代理配置写入到 profile/user.js（foxprint 启动时会读取 profile 目录）
+        const userJsFrom = path.join(envDir, 'user.js')
+        const userJsTo = path.join(profileDir, 'user.js')
+        if (fs.existsSync(userJsFrom)) fs.copyFileSync(userJsFrom, userJsTo)
 
-      const profileDir = path.join(__dirname, '../../data/profiles', String(env.id))
-      if (!fs.existsSync(profileDir)) fs.mkdirSync(profileDir, { recursive: true })
+        // 直接按 foxprint 文档方式启动，不经过 Python bridge
+        const args = [
+          `--fpfile=${fpfilePath}`,
+          `--profile=${profileDir}`,
+        ]
+        const child = spawn(foxprintPath, args, {
+          cwd: path.dirname(foxprintPath),
+          detached: true,
+          stdio: 'ignore',
+          windowsHide: false,
+        })
+        child.unref()
 
-      const launchOpts = {
-        exe_path: foxprintPath,
-        profile: profileDir,
-        fpfile: fpfilePath,
+        return { ok: true, data: { pid: child.pid, mode: 'native-foxprint' } }
       }
-      if (env.proxy_type !== 'none' && env.proxy_host) {
-        launchOpts.proxy = `${env.proxy_type}://${env.proxy_host}:${env.proxy_port}`
-      }
-      const result = await pythonBridge.call('launch', launchOpts)
-      // 启动后清理临时 fpfile
-      try { fs.unlinkSync(fpfilePath) } catch (_) {}
-      return result
+      return pythonBridge.call('launch', options)
+    } catch (e) {
+      return { ok: false, error: e?.message || '启动异常' }
     }
-    return pythonBridge.call('launch', options)
   })
 
   // 导航到URL
@@ -316,6 +333,8 @@ function registerIpcHandlers() {
         cpu_cores=@cpuCores, screen_w=@screenW, screen_h=@screenH, webdriver=@webdriver
       WHERE id=@id
     `).run({ ...env, id })
+    const updatedEnv = db.prepare('SELECT * FROM environments WHERE id = ?').get(id)
+    writeEnvFiles(updatedEnv)
     return { ok: true }
   })
 
@@ -344,11 +363,14 @@ function registerIpcHandlers() {
       )
     `)
     const info = stmt.run(env)
+    const newEnv = db.prepare('SELECT * FROM environments WHERE id = ?').get(info.lastInsertRowid)
+    writeEnvFiles(newEnv)
     return { ok: true, id: info.lastInsertRowid }
   })
 
   ipcMain.handle('ruyi:db-delete-env', (_event, id) => {
     db.prepare('DELETE FROM environments WHERE id = ?').run(id)
+    deleteEnvFiles(id)
     return { ok: true }
   })
 
@@ -378,8 +400,7 @@ function registerIpcHandlers() {
   })
 
   ipcMain.handle('ruyi:foxprint-path', () => {
-    const p = path.join(__dirname, '../../data/foxprint/foxprint.exe')
-    return fs.existsSync(p) ? p : null
+    return resolveInstalledFoxprintPath()
   })
 
   ipcMain.handle('ruyi:open-foxprint-folder', () => {
@@ -515,6 +536,98 @@ function registerIpcHandlers() {
 
     return { ok: false, msg: '不支持的代理类型' }
   })
+}
+
+// ─── 环境文件管理 ─────────────────────────────────────────────────────────────
+
+function getEnvDir(envId) {
+  return path.join(__dirname, '../../data/envs', String(envId))
+}
+
+function getFoxprintInstallerPath() {
+  return path.join(__dirname, '../../data/foxprint/foxprint.exe')
+}
+
+function resolveInstalledFoxprintPath() {
+  const exeNames = ['foxprint.exe', 'firefox.exe']
+  const baseDirs = [
+    process.env.PROGRAMFILES,
+    process.env['PROGRAMFILES(X86)'],
+    process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, 'Programs') : '',
+  ].filter(Boolean)
+
+  const seen = new Set()
+  const candidates = []
+  const pushCandidate = (p) => {
+    if (!p) return
+    const norm = path.normalize(p)
+    if (seen.has(norm)) return
+    seen.add(norm)
+    candidates.push(norm)
+  }
+
+  // 1) 明确目录命中（优先）
+  for (const baseDir of baseDirs) {
+    for (const exeName of exeNames) {
+      pushCandidate(path.join(baseDir, 'foxprint', exeName))
+      pushCandidate(path.join(baseDir, 'firefox-fingerprintBrowser', exeName))
+      pushCandidate(path.join(baseDir, 'ruyipage', exeName))
+    }
+  }
+
+  // 2) 在常见安装目录里做一次轻量扫描（仅目录名包含关键词）
+  const dirKeyword = /(foxprint|fingerprint|ruyipage|firefox)/i
+  for (const baseDir of baseDirs) {
+    if (!fs.existsSync(baseDir)) continue
+    let entries = []
+    try {
+      entries = fs.readdirSync(baseDir, { withFileTypes: true })
+    } catch (_) {
+      continue
+    }
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue
+      if (!dirKeyword.test(entry.name)) continue
+      for (const exeName of exeNames) {
+        pushCandidate(path.join(baseDir, entry.name, exeName))
+      }
+    }
+  }
+
+  for (const exePath of candidates) {
+    if (fs.existsSync(exePath)) return exePath
+  }
+  return null
+}
+
+function writeEnvFiles(env) {
+  const dir = getEnvDir(env.id)
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
+
+  // 写 fpfile.txt
+  const lines = buildFpfileLines(env)
+  fs.writeFileSync(path.join(dir, 'fpfile.txt'), lines.join('\n'), 'utf8')
+
+  // 写 user.js（代理配置）
+  const userJsPath = path.join(dir, 'user.js')
+  if (env.proxy_type !== 'none' && env.proxy_host) {
+    const prefs = [
+      `user_pref("network.proxy.type", 1);`,
+      `user_pref("network.proxy.http", "${env.proxy_host}");`,
+      `user_pref("network.proxy.http_port", ${Number(env.proxy_port)});`,
+      `user_pref("network.proxy.ssl", "${env.proxy_host}");`,
+      `user_pref("network.proxy.ssl_port", ${Number(env.proxy_port)});`,
+    ]
+    fs.writeFileSync(userJsPath, prefs.join('\n') + '\n', 'utf8')
+  } else {
+    // 直连：显式清除代理防止旧配置残留
+    fs.writeFileSync(userJsPath, 'user_pref("network.proxy.type", 0);\n', 'utf8')
+  }
+}
+
+function deleteEnvFiles(envId) {
+  const dir = getEnvDir(envId)
+  if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true })
 }
 
 // ─── 工具函数 ─────────────────────────────────────────────────────────────────
