@@ -2,6 +2,26 @@
 
 ## [Unreleased]
 
+### v0.5.0 — ui: 全局界面美化，现代 SaaS 风格重设计
+
+- `src/renderer/style.css`：完整重写全局样式
+  - 新设计变量体系：`--accent: #6366F1`（靛蓝）替换旧蓝色，新增 `--accent-hover/light/dim`、`--radius-sm/lg`、`--shadow-xs/md/lg` 层次
+  - 字体：引入 Google Fonts Plus Jakarta Sans，提升西文排版质感
+  - 侧边栏：移除 border-left 指示条，改为圆角背景高亮激活态
+  - 表格：表头全大写 + 字间距，行间距增加，hover 带极淡蓝底
+  - 按钮：primary 加 box-shadow 光晕，新增 `.btn--sm`、`.btn--success`、pill 风格 `.tab-opt`
+  - Modal：添加 `backdrop-filter: blur(2px)`，卡片加 border
+  - Toggle：开关加 box-shadow 立体感
+  - 新增 `.proxy-tag / .proxy-tag--active`：代理状态标签，无代理灰色，有代理靛蓝
+  - 新增 `.env-name-badge`：环境名加粗展示
+  - 新增 `.meta-chip`：时区/时间次要信息样式
+  - 滚动条：细化为 5px，hover 变靛蓝
+- `src/renderer/views/environment/index.vue`：更新环境列表模板
+  - 环境名称使用 `.env-name-badge`
+  - 代理列使用 `.proxy-tag` + `.proxy-tag--active` 条件类
+  - 时区 / 创建时间使用 `.meta-chip`
+  - 操作按钮：启动改为 `.btn--success`，全部添加 `.btn--sm` 紧凑版
+
 ### v0.4.9 — feat: 图标更新为如意1.svg、任务栏图标修复
 
 - `make-icon.js`：重构为支持命令行参数指定 SVG 源文件，使用 `png-to-ico` ESM 导入修复兼容性

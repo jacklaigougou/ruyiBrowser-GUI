@@ -25,15 +25,15 @@
           <td colspan="5" class="empty-tip">暂无环境，点击「新建环境」创建</td>
         </tr>
         <tr v-for="env in envList" :key="env.id">
-          <td style="font-weight:500">{{ env.name }}</td>
-          <td style="font-size:12px;color:var(--text-muted)">{{ proxyDisplay(env) }}</td>
-          <td style="font-size:12px;color:var(--text-muted)">{{ env.timezone || '—' }}</td>
-          <td style="font-size:12px;color:var(--text-muted)">{{ env.created_at }}</td>
+          <td><span class="env-name-badge">{{ env.name }}</span></td>
+          <td><span class="proxy-tag" :class="env.proxy_type !== 'none' && env.proxy_host ? 'proxy-tag--active' : ''">{{ proxyDisplay(env) }}</span></td>
+          <td><span class="meta-chip">{{ env.timezone || '—' }}</span></td>
+          <td><span class="meta-chip">{{ env.created_at }}</span></td>
           <td>
             <div class="table-actions">
-              <button class="btn btn--text" @click="launch(env)">启动</button>
-              <button class="btn btn--text" @click="router.push(`/environment/edit/${env.id}`)">修改</button>
-              <button class="btn btn--danger btn--text" @click="del(env.id)">删除</button>
+              <button class="btn btn--success btn--sm" @click="launch(env)">启动</button>
+              <button class="btn btn--text btn--sm" @click="router.push(`/environment/edit/${env.id}`)">修改</button>
+              <button class="btn btn--danger btn--text btn--sm" @click="del(env.id)">删除</button>
             </div>
           </td>
         </tr>
