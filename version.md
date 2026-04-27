@@ -2,7 +2,13 @@
 
 ## [Unreleased]
 
-### v0.5.1 — fix: SOCKS5 代理 user.js 写法修正
+### v0.5.2 — fix: 代理切换后旧配置残留导致无法连接
+
+- `src/main/main.js`：
+  - `writeEnvFiles()`：SOCKS5 模式下额外清空 http/ssl pref，HTTP 模式下额外清空 socks pref，防止切换代理类型时旧键残留在 prefs.js 中
+  - `ruyi:launch`：启动前删除 `profiles/<id>/prefs.js`，强制 Firefox 从 user.js 重建，彻底消除历史代理配置干扰
+
+
 
 - `src/main/main.js`：`writeEnvFiles()` 修复代理类型判断
   - HTTP 代理：写 `network.proxy.http/http_port/ssl/ssl_port`（原有），补加 `no_proxies_on: ""`

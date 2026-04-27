@@ -221,6 +221,9 @@ function registerIpcHandlers() {
         const userJsFrom = path.join(envDir, 'user.js')
         const userJsTo = path.join(profileDir, 'user.js')
         if (fs.existsSync(userJsFrom)) fs.copyFileSync(userJsFrom, userJsTo)
+        // 删除 prefs.js，防止旧代理配置残留干扰 user.js 的设置
+        const prefsJsPath = path.join(profileDir, 'prefs.js')
+        if (fs.existsSync(prefsJsPath)) fs.unlinkSync(prefsJsPath)
 
         // 直接按 foxprint 文档方式启动，不经过 Python bridge
         const args = [
@@ -647,6 +650,11 @@ function writeEnvFiles(env) {
         `user_pref("network.proxy.socks_version", 5);`,
         `user_pref("network.proxy.socks_remote_dns", true);`,
         `user_pref("network.proxy.no_proxies_on", "");`,
+        // 清除可能残留的 http 代理旧配置
+        `user_pref("network.proxy.http", "");`,
+        `user_pref("network.proxy.http_port", 0);`,
+        `user_pref("network.proxy.ssl", "");`,
+        `user_pref("network.proxy.ssl_port", 0);`,
       ]
     } else {
       // http / https
@@ -657,6 +665,9 @@ function writeEnvFiles(env) {
         `user_pref("network.proxy.ssl", "${host}");`,
         `user_pref("network.proxy.ssl_port", ${port});`,
         `user_pref("network.proxy.no_proxies_on", "");`,
+        // 清除可能残留的 socks 旧配置
+        `user_pref("network.proxy.socks", "");`,
+        `user_pref("network.proxy.socks_port", 0);`,
       ]
     }
     fs.writeFileSync(userJsPath, prefs.join('\n') + '\n', 'utf8')
