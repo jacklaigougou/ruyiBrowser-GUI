@@ -7,7 +7,7 @@
         <ol style="padding-left:20px;line-height:2;font-size:14px;color:var(--text);margin:0">
           <li>🌐 浏览器需要从 GitHub 下载，请确保网络可以访问 GitHub（需科学上网）。下载完成后请<strong>手动运行安装包</strong>完成安装。</li>
           <li>📁 安装时请使用<strong>默认路径</strong>，不要自定义安装目录，否则程序无法自动找到浏览器。</li>
-          <li>🗑️ 如果下载安装后仍无法启动，请先<strong>卸载并删除</strong>本机已有的 Firefox / foxprint 浏览器，文件路径冲突会导致识别失败。</li>
+          <li>🗑️ 如果下载安装后仍无法启动，请先<strong>卸载并删除</strong>本机已有的 Firefox / foxprint 浏览器，文件路径冲突会导致识别失败。推荐使用 <a href="https://geekuninstaller.com" target="_blank" style="color:var(--accent)">Geek Uninstaller</a> 彻底清除残留文件。</li>
         </ol>
         <div class="modal-actions">
           <button class="btn btn--primary" @click="showGuide = false">我知道了</button>
