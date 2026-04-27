@@ -3,17 +3,6 @@ revision = 3
 requires-python = ">=3.13"
 
 [[package]]
-name = "python"
-version = "0.1.0"
-source = { virtual = "." }
-dependencies = [
-    { name = "ruyipage" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "ruyipage", specifier = ">=1.2.1" }]
-
-[[package]]
 name = "ruyipage"
 version = "1.2.1"
 source = { registry = "https://pypi.org/simple" }
@@ -24,6 +13,17 @@ sdist = { url = "https://files.pythonhosted.org/packages/24/48/5f7eaa0f708322986
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5f/4b/361c537bd24cfd76956bd8023b16f270db313dde7323f037152af1b4f1f9/ruyipage-1.2.1-py3-none-any.whl", hash = "sha256:da6b3357d4bab0fead6d4c71973fcbb475dc7108e2d37ef0182218e7ec70baa7", size = 256275, upload-time = "2026-04-23T16:49:39.81Z" },
 ]
+
+[[package]]
+name = "ruyipage-server"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "ruyipage" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "ruyipage", specifier = ">=1.2.1" }]
 
 [[package]]
 name = "websocket-client"

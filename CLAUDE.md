@@ -8,6 +8,9 @@ Before coding:
 
 Only write code if explicitly asked
 
+# git
+version.md 文件，每次提交前commit之前，需要中文记录修改了那些地方。 并且加入版本号，如 v1.0.1
+
 # Planning With Files (ZH)
 
 当任务较复杂时：

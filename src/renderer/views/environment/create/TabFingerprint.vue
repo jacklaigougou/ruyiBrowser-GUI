@@ -195,12 +195,8 @@ async function queryIpInfo() {
       props.form.timezoneMode = 'custom'
       props.form.timezone = result.timezone
     }
-    if (result.countryCode) {
-      const langMap = { CN: 'zh-CN', US: 'en-US', JP: 'ja-JP', KR: 'ko-KR', TW: 'zh-TW', HK: 'zh-HK' }
-      const lang = langMap[result.countryCode] || result.countryCode.toLowerCase()
-      props.form.languageMode = 'custom'
-      props.form.language = lang
-    }
+    props.form.languageMode = 'custom'
+    props.form.language = 'en-US,en'
     if (result.lat && result.lon) {
       props.form.geoMode = 'custom'
       props.form.geoLat = String(result.lat)

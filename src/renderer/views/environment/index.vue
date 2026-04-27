@@ -62,8 +62,20 @@ function proxyDisplay(env) {
 
 async function launch(env) {
   addLog(`正在启动环境: ${env.name}`, 'info')
-  const res = await window.ruyi.launch({ envId: env.id })
-  addLog(res.ok ? `环境启动成功: ${env.name}` : `启动失败: ${res.error}`, res.ok ? 'ok' : 'err')
+  try {
+    const res = await window.ruyi.launch({ envId: env.id })
+    if (res?.ok) {
+      addLog(`环境启动成功: ${env.name}`, 'ok')
+      return
+    }
+    const msg = res?.error || '未知错误'
+    addLog(`启动失败: ${msg}`, 'err')
+    alert(`启动失败：${msg}`)
+  } catch (e) {
+    const msg = e?.message || '调用失败'
+    addLog(`启动失败: ${msg}`, 'err')
+    alert(`启动失败：${msg}`)
+  }
 }
 
 async function del(id) {

@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### v0.4.6 — fix+feat: 语言固定英文、启动错误弹窗提示
+
+- `src/renderer/views/environment/create/TabFingerprint.vue`：根据 IP 设置时，语言不再根据国家代码映射，固定为 `en-US,en`
+- `src/renderer/views/environment/index.vue`：`launch()` 函数增加 try/catch 错误处理，启动失败时弹窗提示具体错误信息
+- `CLAUDE.md`：新增 git 提交规范（version.md 记录 + 版本号）
+
 ### v0.4.5 — feat: 环境文件持久化 + 启动修复
 
 - `src/main/main.js`：
