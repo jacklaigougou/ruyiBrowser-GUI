@@ -641,55 +641,8 @@ function getFoxprintInstallerPath() {
 }
 
 function resolveInstalledFoxprintPath() {
-  const exeNames = ['foxprint.exe', 'firefox.exe']
-  const baseDirs = [
-    process.env.PROGRAMFILES,
-    process.env['PROGRAMFILES(X86)'],
-    process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, 'Programs') : '',
-  ].filter(Boolean)
-
-  const seen = new Set()
-  const candidates = []
-  const pushCandidate = (p) => {
-    if (!p) return
-    const norm = path.normalize(p)
-    if (seen.has(norm)) return
-    seen.add(norm)
-    candidates.push(norm)
-  }
-
-  // 1) 明确目录命中（优先）
-  for (const baseDir of baseDirs) {
-    for (const exeName of exeNames) {
-      pushCandidate(path.join(baseDir, 'foxprint', exeName))
-      pushCandidate(path.join(baseDir, 'firefox-fingerprintBrowser', exeName))
-      pushCandidate(path.join(baseDir, 'ruyipage', exeName))
-    }
-  }
-
-  // 2) 在常见安装目录里做一次轻量扫描（仅目录名包含关键词）
-  const dirKeyword = /(foxprint|fingerprint|ruyipage|firefox)/i
-  for (const baseDir of baseDirs) {
-    if (!fs.existsSync(baseDir)) continue
-    let entries = []
-    try {
-      entries = fs.readdirSync(baseDir, { withFileTypes: true })
-    } catch (_) {
-      continue
-    }
-    for (const entry of entries) {
-      if (!entry.isDirectory()) continue
-      if (!dirKeyword.test(entry.name)) continue
-      for (const exeName of exeNames) {
-        pushCandidate(path.join(baseDir, entry.name, exeName))
-      }
-    }
-  }
-
-  for (const exePath of candidates) {
-    if (fs.existsSync(exePath)) return exePath
-  }
-  return null
+  const exePath = 'C:\\Program Files\\Mozilla Firefox\\firefox.exe'
+  return fs.existsSync(exePath) ? exePath : null
 }
 
 function writeEnvFiles(env, proxyOverride = null) {
