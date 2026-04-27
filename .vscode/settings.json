@@ -1,0 +1,10 @@
+{
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "driver": "SQLite",
+            "name": "ruyi",
+            "database": "${workspaceFolder:ruyipage-electron}/data/ruyipage.db"
+        }
+    ]
+}
