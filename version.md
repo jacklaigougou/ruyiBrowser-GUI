@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+### v0.4.7 — fix+feat: 打包路径修复、自定义图标
+
+- `src/main/main.js`：
+  - 新增 `getDataDir()` 辅助函数，所有 `data/` 路径改用 `app.getPath('userData')` 确保打包后数据持久化到用户目录
+  - `createWindow()`：dev/prod 模式互斥加载，生产用 `app.getAppPath()` 定位 index.html 和 preload.js
+  - `startPythonServer()`：打包后从 `process.resourcesPath/python` 启动，开发时用源码目录
+- `package.json`：
+  - `build.files` 新增 `dist/renderer/**/*`，修复打包后页面缺失导致无法启动的问题
+  - `build.icon` 配置为 `assets/icon.ico`
+  - `build.asarUnpack` 添加 `better-sqlite3` native 模块
+  - `build.extraResources` 将 python 目录打入安装包
+- `assets/icon.ico`：新增应用图标（多尺寸 16/32/48/64/128/256px）
+- `assets/icon.png`：新增 256px PNG 图标源文件
+- `assets/icon.svg`：新增 SVG 矢量图标
+
 ### v0.4.6 — fix+feat: 语言固定英文、启动错误弹窗提示
 
 - `src/renderer/views/environment/create/TabFingerprint.vue`：根据 IP 设置时，语言不再根据国家代码映射，固定为 `en-US,en`

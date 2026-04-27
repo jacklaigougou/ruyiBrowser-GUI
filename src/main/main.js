@@ -8,6 +8,11 @@ const pythonBridge = require('./python-bridge')
 const { queryIp } = require('./http/ipQuery')
 const { buildSpeechLines } = require('./http/speechVoiceMap')
 
+// 用户数据目录（打包后持久存储数据库、环境文件、foxprint）
+function getDataDir(...subPaths) {
+  return path.join(app.getPath('userData'), 'data', ...subPaths)
+}
+
 let mainWindow
 let pythonProcess = null
 let db = null
@@ -16,10 +21,10 @@ let db = null
 
 function initDatabase() {
   const Database = require('better-sqlite3')
-  const dataDir = path.join(__dirname, '../../data')
+  const dataDir = getDataDir()
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true })
 
-  db = new Database(path.join(dataDir, 'ruyipage.db'))
+  db = new Database(getDataDir('ruyipage.db'))
   db.pragma('journal_mode = WAL')
 
   db.exec(`
@@ -87,7 +92,10 @@ function initDatabase() {
 // ─── Python 服务生命周期 ───────────────────────────────────────────────────────
 
 function startPythonServer() {
-  const pythonDir = path.join(__dirname, '../../python')
+  // 开发时用源码目录，打包后 python 通过 extraResources 放在 resources/python
+  const pythonDir = app.isPackaged
+    ? path.join(process.resourcesPath, 'python')
+    : path.join(__dirname, '../../python')
   // uv run 会自动激活 python/.venv 里的环境
   pythonProcess = spawn('uv', ['run', 'server.py'], {
     cwd: pythonDir,
@@ -120,7 +128,7 @@ function createWindow() {
     minWidth: 900,
     minHeight: 600,
     webPreferences: {
-      preload: path.join(__dirname, '../preload/preload.js'),
+      preload: path.join(app.getAppPath(), 'src/preload/preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
     },
@@ -135,10 +143,10 @@ function createWindow() {
     },
   })
 
-  mainWindow.loadFile(path.join(__dirname, '../../dist/renderer/index.html'))
-
   if (process.argv.includes('--dev')) {
     mainWindow.loadURL('http://localhost:5173')
+  } else {
+    mainWindow.loadFile(path.join(app.getAppPath(), 'dist/renderer/index.html'))
   }
 
   mainWindow.once('ready-to-show', () => {
@@ -190,7 +198,7 @@ function registerIpcHandlers() {
 
         const envDir = getEnvDir(env.id)
         const fpfilePath = path.join(envDir, 'fpfile.txt')
-        const profileDir = path.join(__dirname, '../../data/profiles', String(env.id))
+        const profileDir = getDataDir('profiles', String(env.id))
         if (!fs.existsSync(profileDir)) fs.mkdirSync(profileDir, { recursive: true })
         // 代理配置写入到 profile/user.js（foxprint 启动时会读取 profile 目录）
         const userJsFrom = path.join(envDir, 'user.js')
@@ -377,9 +385,9 @@ function registerIpcHandlers() {
   // ─── 下载 foxprint.exe ────────────────────────────────────────────────────
 
   ipcMain.handle('ruyi:download-foxprint', async (event) => {
-    const dataDir = path.join(__dirname, '../../data/foxprint')
+    const dataDir = getDataDir('foxprint')
     if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true })
-    const destPath = path.join(dataDir, 'foxprint.exe')
+    const destPath = getDataDir('foxprint', 'foxprint.exe')
 
     // 查询最新 GitHub Release
     const releaseMeta = await fetchJson(
@@ -405,7 +413,7 @@ function registerIpcHandlers() {
 
   ipcMain.handle('ruyi:open-foxprint-folder', () => {
     const { shell } = require('electron')
-    const dir = path.join(__dirname, '../../data/foxprint')
+    const dir = getDataDir('foxprint')
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
     shell.openPath(dir)
   })
@@ -541,11 +549,11 @@ function registerIpcHandlers() {
 // ─── 环境文件管理 ─────────────────────────────────────────────────────────────
 
 function getEnvDir(envId) {
-  return path.join(__dirname, '../../data/envs', String(envId))
+  return getDataDir('envs', String(envId))
 }
 
 function getFoxprintInstallerPath() {
-  return path.join(__dirname, '../../data/foxprint/foxprint.exe')
+  return getDataDir('foxprint', 'foxprint.exe')
 }
 
 function resolveInstalledFoxprintPath() {

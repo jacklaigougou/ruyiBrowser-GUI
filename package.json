@@ -25,6 +25,7 @@
     "concurrently": "^9.2.1",
     "electron": "^33.0.0",
     "electron-builder": "^25.0.0",
+    "png-to-ico": "^3.0.1",
     "vite": "^8.0.10",
     "vue-router": "^5.0.6",
     "wait-on": "^9.0.5"
@@ -37,13 +38,28 @@
   "build": {
     "appId": "com.ruyipage.electron",
     "productName": "ruyiPage GUI",
+    "icon": "assets/icon.ico",
     "directories": {
-      "output": "dist"
+      "output": "dist",
+      "buildResources": "assets"
     },
     "files": [
       "src/**/*",
-      "assets/**/*",
+      "dist/renderer/**/*",
       "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "python",
+        "to": "python",
+        "filter": [
+          "**/*",
+          "!.venv/**/*"
+        ]
+      }
+    ],
+    "asarUnpack": [
+      "node_modules/better-sqlite3/**/*"
     ]
   }
 }
