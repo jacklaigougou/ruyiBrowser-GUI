@@ -454,6 +454,18 @@ function registerIpcHandlers() {
     shell.openPath(dir)
   })
 
+  ipcMain.handle('ruyi:check-network', () => {
+    return new Promise((resolve) => {
+      const req = https.get(
+        { hostname: 'www.google.com', path: '/', timeout: 5000,
+          headers: { 'User-Agent': 'ruyipage-electron' } },
+        (res) => { res.resume(); resolve({ ok: true }) }
+      )
+      req.on('timeout', () => { req.destroy(); resolve({ ok: false }) })
+      req.on('error', () => resolve({ ok: false }))
+    })
+  })
+
   ipcMain.handle('ruyi:screen-size', () => {
     const { screen } = require('electron')
     const { width, height } = screen.getPrimaryDisplay().size

@@ -2,7 +2,16 @@
 
 ## [Unreleased]
 
-### v0.5.6 — ui: 界面优化、README 更新、安装说明弹窗
+### v0.5.7 — feat: 下载前网络检测、美化弹窗
+
+- `src/main/main.js`：新增 `ruyi:check-network` handler，HTTPS GET google.com，5 秒超时检测网络连通性
+- `src/preload/preload.js`：暴露 `checkNetwork()`
+- `src/renderer/views/environment/create/TabBasic.vue`：
+  - 「下载安装包」按钮点击前先检测网络，不通则弹窗提示科学上网
+  - 已下载时弹确认弹窗，替换原生 `confirm()`
+  - 网络不通、下载失败均改为项目风格 modal，替换原生 `alert()`
+  - 下载逻辑抽为 `startDownload()`，确认弹窗与首次下载共用
+
 
 - `src/renderer/views/environment/index.vue`：无代理环境代理列显示改为「本地直连」
 - `src/renderer/views/environment/create/TabProxy.vue`：WebRTC「使用代理」模式下显示当前代理 IP，未填写时提示

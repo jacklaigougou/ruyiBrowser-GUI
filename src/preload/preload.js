@@ -51,6 +51,9 @@ contextBridge.exposeInMainWorld('ruyi', {
     ipcRenderer.removeAllListeners('ruyi:download-progress')
   },
 
+  // 网络连通检测
+  checkNetwork: () => ipcRenderer.invoke('ruyi:check-network'),
+
   // IP 地理信息查询
   queryIp: (ip) => ipcRenderer.invoke('ruyi:query-ip', ip),
 
