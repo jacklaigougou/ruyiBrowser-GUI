@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### v0.5.1 — fix: SOCKS5 代理 user.js 写法修正
+
+- `src/main/main.js`：`writeEnvFiles()` 修复代理类型判断
+  - HTTP 代理：写 `network.proxy.http/http_port/ssl/ssl_port`（原有），补加 `no_proxies_on: ""`
+  - SOCKS5 代理：改写为 `network.proxy.socks/socks_port/socks_version=5/socks_remote_dns=true`，原来的 http pref 对 SOCKS5 无效导致浏览器无法连接
+
 ### v0.5.0 — ui: 全局界面美化，现代 SaaS 风格重设计
 
 - `src/renderer/style.css`：完整重写全局样式

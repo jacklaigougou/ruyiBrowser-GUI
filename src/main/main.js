@@ -636,13 +636,29 @@ function writeEnvFiles(env) {
   // 写 user.js（代理配置）
   const userJsPath = path.join(dir, 'user.js')
   if (env.proxy_type !== 'none' && env.proxy_host) {
-    const prefs = [
-      `user_pref("network.proxy.type", 1);`,
-      `user_pref("network.proxy.http", "${env.proxy_host}");`,
-      `user_pref("network.proxy.http_port", ${Number(env.proxy_port)});`,
-      `user_pref("network.proxy.ssl", "${env.proxy_host}");`,
-      `user_pref("network.proxy.ssl_port", ${Number(env.proxy_port)});`,
-    ]
+    const host = env.proxy_host
+    const port = Number(env.proxy_port)
+    let prefs
+    if (env.proxy_type === 'socks5') {
+      prefs = [
+        `user_pref("network.proxy.type", 1);`,
+        `user_pref("network.proxy.socks", "${host}");`,
+        `user_pref("network.proxy.socks_port", ${port});`,
+        `user_pref("network.proxy.socks_version", 5);`,
+        `user_pref("network.proxy.socks_remote_dns", true);`,
+        `user_pref("network.proxy.no_proxies_on", "");`,
+      ]
+    } else {
+      // http / https
+      prefs = [
+        `user_pref("network.proxy.type", 1);`,
+        `user_pref("network.proxy.http", "${host}");`,
+        `user_pref("network.proxy.http_port", ${port});`,
+        `user_pref("network.proxy.ssl", "${host}");`,
+        `user_pref("network.proxy.ssl_port", ${port});`,
+        `user_pref("network.proxy.no_proxies_on", "");`,
+      ]
+    }
     fs.writeFileSync(userJsPath, prefs.join('\n') + '\n', 'utf8')
   } else {
     // 直连：显式清除代理防止旧配置残留
