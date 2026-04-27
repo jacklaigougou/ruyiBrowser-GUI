@@ -2,7 +2,11 @@
 
 ## [Unreleased]
 
-### v0.5.3 — feat: SOCKS5→HTTP 本地桥接代理
+### v0.5.4 — revert: 撤销代理修改，回到 v0.5.0 UI 美化版本
+
+- `src/main/main.js`：撤销 v0.5.1/v0.5.2/v0.5.3 的代理相关修改，恢复到 v0.5.0（UI 美化）之后的状态
+
+
 
 - `src/main/main.js`：
   - 新增 `startSocks5Bridge(host, port, user, pass)`：纯 Node.js net 实现本地 HTTP CONNECT→SOCKS5 转发，支持用户名密码认证，随机端口，双向 pipe 透传
