@@ -4,6 +4,7 @@ const fs = require('fs')
 const https = require('https')
 const http = require('http')
 const { spawn } = require('child_process')
+const { SocksClient } = require('socks')
 const pythonBridge = require('./python-bridge')
 const { queryIp } = require('./http/ipQuery')
 const { buildSpeechLines } = require('./http/speechVoiceMap')
@@ -16,6 +17,7 @@ function getDataDir(...subPaths) {
 let mainWindow
 let pythonProcess = null
 let db = null
+const socksBridgeServers = new Map()
 
 // ─── SQLite 数据库 ────────────────────────────────────────────────────────────
 
@@ -184,6 +186,7 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   stopPythonServer()
+  stopAllSocksHttpBridges()
   if (process.platform !== 'darwin') app.quit()
 })
 
@@ -210,13 +213,28 @@ function registerIpcHandlers() {
           }
         }
 
+        let proxyOverride = null
+        if (env.proxy_type === 'socks5') {
+          const bridge = await ensureSocksHttpBridge(env)
+          proxyOverride = {
+            type: 'http',
+            host: '127.0.0.1',
+            port: bridge.port,
+          }
+        } else {
+          stopSocksHttpBridge(env.id)
+        }
+
         // 确保环境文件是最新的（启动前同步覆盖写一次）
-        writeEnvFiles(env)
+        writeEnvFiles(env, proxyOverride)
 
         const envDir = getEnvDir(env.id)
         const fpfilePath = path.join(envDir, 'fpfile.txt')
         const profileDir = getDataDir('profiles', String(env.id))
         if (!fs.existsSync(profileDir)) fs.mkdirSync(profileDir, { recursive: true })
+        // 避免历史 prefs.js 残留代理键影响本次启动，强制从 user.js 重建
+        const prefsJsPath = path.join(profileDir, 'prefs.js')
+        if (fs.existsSync(prefsJsPath)) fs.rmSync(prefsJsPath, { force: true })
         // 代理配置写入到 profile/user.js（foxprint 启动时会读取 profile 目录）
         const userJsFrom = path.join(envDir, 'user.js')
         const userJsTo = path.join(profileDir, 'user.js')
@@ -395,6 +413,7 @@ function registerIpcHandlers() {
 
   ipcMain.handle('ruyi:db-delete-env', (_event, id) => {
     db.prepare('DELETE FROM environments WHERE id = ?').run(id)
+    stopSocksHttpBridge(id)
     deleteEnvFiles(id)
     return { ok: true }
   })
@@ -475,6 +494,42 @@ function registerIpcHandlers() {
       public_ipv6:            env.publicIpv6,
     }
     return buildFpfileLines(row).join('\n')
+  })
+
+  ipcMain.handle('ruyi:inspect-env-files', (_event, envId) => {
+    const id = Number(envId)
+    if (!Number.isFinite(id) || id <= 0) {
+      return { ok: false, error: '环境ID无效' }
+    }
+
+    const envDir = getEnvDir(id)
+    const profileDir = getDataDir('profiles', String(id))
+    const targets = [
+      { key: 'fpfile', name: 'fpfile.txt', path: path.join(envDir, 'fpfile.txt') },
+      { key: 'userjs', name: 'user.js', path: path.join(envDir, 'user.js') },
+      { key: 'profileUserjs', name: 'profile/user.js', path: path.join(profileDir, 'user.js') },
+    ]
+
+    const files = {}
+    for (const item of targets) {
+      if (!fs.existsSync(item.path)) {
+        files[item.key] = {
+          name: item.name,
+          path: item.path,
+          exists: false,
+          content: '',
+        }
+        continue
+      }
+      files[item.key] = {
+        name: item.name,
+        path: item.path,
+        exists: true,
+        content: fs.readFileSync(item.path, 'utf8'),
+      }
+    }
+
+    return { ok: true, files }
   })
 
   ipcMain.handle('ruyi:test-proxy', async (_event, { type, host, port, user, pass }) => {
@@ -625,7 +680,7 @@ function resolveInstalledFoxprintPath() {
   return null
 }
 
-function writeEnvFiles(env) {
+function writeEnvFiles(env, proxyOverride = null) {
   const dir = getEnvDir(env.id)
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
 
@@ -635,24 +690,199 @@ function writeEnvFiles(env) {
 
   // 写 user.js（代理配置）
   const userJsPath = path.join(dir, 'user.js')
-  if (env.proxy_type !== 'none' && env.proxy_host) {
-    const prefs = [
-      `user_pref("network.proxy.type", 1);`,
-      `user_pref("network.proxy.http", "${env.proxy_host}");`,
-      `user_pref("network.proxy.http_port", ${Number(env.proxy_port)});`,
-      `user_pref("network.proxy.ssl", "${env.proxy_host}");`,
-      `user_pref("network.proxy.ssl_port", ${Number(env.proxy_port)});`,
-    ]
+  const hasProxy = env.proxy_type !== 'none' && env.proxy_host
+  if (hasProxy || proxyOverride) {
+    const effectiveType = proxyOverride?.type || env.proxy_type
+    const effectiveHost = proxyOverride?.host || env.proxy_host
+    const effectivePort = Number(proxyOverride?.port || env.proxy_port)
+    const prefs = [`user_pref("network.proxy.type", 1);`]
+
+    if (effectiveType === 'socks5') {
+      prefs.push(
+        `user_pref("network.proxy.socks", "${effectiveHost}");`,
+        `user_pref("network.proxy.socks_port", ${effectivePort});`,
+        `user_pref("network.proxy.socks_version", 5);`,
+        `user_pref("network.proxy.socks_remote_dns", true);`,
+        `user_pref("network.proxy.no_proxies_on", "");`
+      )
+      if (env.proxy_user) {
+        prefs.push(
+          `user_pref("network.proxy.socks_username", "${env.proxy_user}");`,
+          `user_pref("network.proxy.socks_password", "${env.proxy_pass || ''}");`
+        )
+      }
+    } else {
+      // 默认按 HTTP/HTTPS 代理写入
+      prefs.push(
+        `user_pref("network.proxy.http", "${effectiveHost}");`,
+        `user_pref("network.proxy.http_port", ${effectivePort});`,
+        `user_pref("network.proxy.ssl", "${effectiveHost}");`,
+        `user_pref("network.proxy.ssl_port", ${effectivePort});`,
+        `user_pref("network.proxy.socks", "");`,
+        `user_pref("network.proxy.socks_port", 0);`
+      )
+    }
+
     fs.writeFileSync(userJsPath, prefs.join('\n') + '\n', 'utf8')
-  } else {
-    // 直连：显式清除代理防止旧配置残留
-    fs.writeFileSync(userJsPath, 'user_pref("network.proxy.type", 0);\n', 'utf8')
+    return
   }
+
+  // 直连：显式清除代理防止旧配置残留
+  fs.writeFileSync(userJsPath, 'user_pref("network.proxy.type", 0);\n', 'utf8')
 }
 
 function deleteEnvFiles(envId) {
   const dir = getEnvDir(envId)
   if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true })
+}
+
+function bridgeConfigKey(env) {
+  return `${env.proxy_host}:${env.proxy_port}:${env.proxy_user || ''}:${env.proxy_pass || ''}`
+}
+
+async function ensureSocksHttpBridge(env) {
+  const envId = String(env.id)
+  const key = bridgeConfigKey(env)
+  const existed = socksBridgeServers.get(envId)
+  if (existed && existed.key === key) return existed
+  if (existed) stopSocksHttpBridge(env.id)
+
+  const bridge = await startSocksHttpBridge(env)
+  socksBridgeServers.set(envId, bridge)
+  return bridge
+}
+
+function stopSocksHttpBridge(envId) {
+  const key = String(envId)
+  const item = socksBridgeServers.get(key)
+  if (!item) return
+  try { item.server.close() } catch (_) {}
+  socksBridgeServers.delete(key)
+}
+
+function stopAllSocksHttpBridges() {
+  for (const key of socksBridgeServers.keys()) {
+    stopSocksHttpBridge(key)
+  }
+}
+
+function startSocksHttpBridge(env) {
+  const proxy = {
+    host: env.proxy_host,
+    port: Number(env.proxy_port),
+    user: env.proxy_user || '',
+    pass: env.proxy_pass || '',
+  }
+
+  return new Promise((resolve, reject) => {
+    const server = http.createServer(async (req, res) => {
+      try {
+        const target = parseProxyHttpTarget(req)
+        if (!target) {
+          res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' })
+          res.end('Bad proxy request')
+          return
+        }
+        const socket = await createSocksSocket(proxy, target.hostname, target.port)
+        const headers = { ...req.headers }
+        delete headers['proxy-connection']
+
+        const upstream = http.request({
+          host: target.hostname,
+          port: target.port,
+          method: req.method,
+          path: target.path,
+          headers,
+          agent: false,
+          createConnection: () => socket,
+        }, (upRes) => {
+          res.writeHead(upRes.statusCode || 502, upRes.headers)
+          upRes.pipe(res)
+        })
+
+        upstream.on('error', () => {
+          if (!res.headersSent) {
+            res.writeHead(502, { 'Content-Type': 'text/plain; charset=utf-8' })
+          }
+          res.end('Upstream proxy request failed')
+        })
+        req.pipe(upstream)
+      } catch (_) {
+        if (!res.headersSent) {
+          res.writeHead(502, { 'Content-Type': 'text/plain; charset=utf-8' })
+        }
+        res.end('SOCKS bridge failed')
+      }
+    })
+
+    server.on('connect', async (req, clientSocket, head) => {
+      const [host, portText] = String(req.url || '').split(':')
+      const port = Number(portText) || 443
+      if (!host) {
+        clientSocket.end('HTTP/1.1 400 Bad Request\r\n\r\n')
+        return
+      }
+      try {
+        const upstreamSocket = await createSocksSocket(proxy, host, port)
+        clientSocket.write('HTTP/1.1 200 Connection Established\r\n\r\n')
+        if (head && head.length > 0) upstreamSocket.write(head)
+        upstreamSocket.pipe(clientSocket)
+        clientSocket.pipe(upstreamSocket)
+        upstreamSocket.on('error', () => clientSocket.destroy())
+        clientSocket.on('error', () => upstreamSocket.destroy())
+      } catch (_) {
+        clientSocket.end('HTTP/1.1 502 Bad Gateway\r\n\r\n')
+      }
+    })
+
+    server.on('error', reject)
+    server.listen(0, '127.0.0.1', () => {
+      const addr = server.address()
+      resolve({
+        server,
+        port: addr.port,
+        key: bridgeConfigKey(env),
+      })
+    })
+  })
+}
+
+function parseProxyHttpTarget(req) {
+  try {
+    const absolute = new URL(req.url)
+    return {
+      hostname: absolute.hostname,
+      port: absolute.port ? Number(absolute.port) : 80,
+      path: `${absolute.pathname || '/'}${absolute.search || ''}`,
+    }
+  } catch (_) {
+    const hostHeader = req.headers.host
+    if (!hostHeader) return null
+    const [hostname, portText] = String(hostHeader).split(':')
+    return {
+      hostname,
+      port: Number(portText) || 80,
+      path: req.url || '/',
+    }
+  }
+}
+
+async function createSocksSocket(proxy, targetHost, targetPort) {
+  const proxyConfig = {
+    host: proxy.host,
+    port: proxy.port,
+    type: 5,
+  }
+  if (proxy.user) proxyConfig.userId = proxy.user
+  if (proxy.pass) proxyConfig.password = proxy.pass
+
+  const result = await SocksClient.createConnection({
+    command: 'connect',
+    proxy: proxyConfig,
+    destination: { host: targetHost, port: targetPort },
+    timeout: 12000,
+  })
+  return result.socket
 }
 
 // ─── 工具函数 ─────────────────────────────────────────────────────────────────
@@ -698,7 +928,7 @@ function buildFpfileLines(env) {
     add('height', env.screen_h)
   }
   add('webdriver', env.webdriver)
-  if (env.proxy_type !== 'none' && env.proxy_user) {
+  if (env.proxy_type !== 'none' && env.proxy_type !== 'socks5' && env.proxy_user) {
     add('httpauth.username', env.proxy_user)
     add('httpauth.password', env.proxy_pass)
   }

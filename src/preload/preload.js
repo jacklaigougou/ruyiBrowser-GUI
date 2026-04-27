@@ -59,6 +59,7 @@ contextBridge.exposeInMainWorld('ruyi', {
 
   // fpfile 预览
   previewFpfile: (env) => ipcRenderer.invoke('ruyi:preview-fpfile', env),
+  inspectEnvFiles: (envId) => ipcRenderer.invoke('ruyi:inspect-env-files', envId),
 
   // 代理连通测试
   testProxy: (opts) => ipcRenderer.invoke('ruyi:test-proxy', opts),

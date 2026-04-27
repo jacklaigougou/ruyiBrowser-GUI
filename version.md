@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+### v0.5.5 — feat: SOCKS5 本地 HTTP 桥接、环境文件检查、代理文档补充
+
+- `src/main/main.js`：
+  - 新增 SOCKS5 -> 本地 HTTP 代理桥接能力（`127.0.0.1` 随机端口），浏览器端走 HTTP，本地再转发到上游 SOCKS5（支持用户名密码）
+  - `ruyi:launch`：SOCKS5 环境启动时自动创建桥接并将 `user.js` 写为本地 HTTP 端口；非 SOCKS5 环境自动清理对应桥接
+  - 新增桥接生命周期管理：环境删除时关闭对应桥接，应用退出时关闭全部桥接
+  - 新增 `ruyi:inspect-env-files`：返回 `fpfile.txt`、`envs/<id>/user.js`、`profiles/<id>/user.js` 内容供前端检查
+  - `writeEnvFiles()` 支持代理覆盖参数，用于运行时将代理动态切换到本地桥接端口
+- `src/preload/preload.js`：
+  - 暴露 `inspectEnvFiles(envId)` 给渲染进程
+- `src/renderer/views/environment/index.vue`：
+  - 环境列表操作列新增「检查」按钮
+  - 新增检查弹窗：支持下拉切换查看 `fpfile.txt` / `user.js` / `profile/user.js`，支持复制内容
+- `README.md`：
+  - 新增「HTTP 代理说明」章节，补充 HTTP 代理直连与 SOCKS5 本地桥接机制说明
+
 ### v0.5.4 — revert: 撤销代理修改，回到 v0.5.0 UI 美化版本
 
 - `src/main/main.js`：撤销 v0.5.1/v0.5.2/v0.5.3 的代理相关修改，恢复到 v0.5.0（UI 美化）之后的状态

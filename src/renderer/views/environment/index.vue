@@ -1,5 +1,24 @@
 <template>
   <div class="page-card">
+    <div v-if="inspectModal.visible" class="modal" @click.self="closeInspectModal">
+      <div class="modal-box" style="width:760px;max-height:82vh">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <h2 style="margin:0">环境文件检查</h2>
+          <select v-model="inspectModal.filter" style="width:auto;min-width:170px;font-size:13px">
+            <option value="all">全部</option>
+            <option value="fpfile">仅 fpfile.txt</option>
+            <option value="userjs">仅 user.js</option>
+            <option value="profileUserjs">仅 profile/user.js</option>
+          </select>
+        </div>
+        <pre style="font-size:12px;font-family:Consolas,monospace;background:#fafafa;border:1px solid var(--border);border-radius:var(--radius);padding:12px;overflow-y:auto;max-height:58vh;white-space:pre-wrap;word-break:break-all;color:var(--text)">{{ inspectPreview }}</pre>
+        <div class="modal-actions">
+          <button class="btn" @click="copyInspectText">复制</button>
+          <button class="btn btn--primary" @click="closeInspectModal">关闭</button>
+        </div>
+      </div>
+    </div>
+
     <div class="page-header">
       <span class="page-title">环境管理</span>
       <button class="btn btn--primary" @click="$router.push('/environment/create')">
@@ -32,6 +51,7 @@
           <td>
             <div class="table-actions">
               <button class="btn btn--success btn--sm" @click="launch(env)">启动</button>
+              <button class="btn btn--text btn--sm" @click="inspect(env)">检查</button>
               <button class="btn btn--text btn--sm" @click="router.push(`/environment/edit/${env.id}`)">修改</button>
               <button class="btn btn--danger btn--text btn--sm" @click="del(env.id)">删除</button>
             </div>
@@ -43,13 +63,36 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { addLog } from '../../composables/useLogs'
 
 const router = useRouter()
 
 const envList = ref([])
+const inspectModal = ref({
+  visible: false,
+  filter: 'all',
+  files: null,
+})
+
+const inspectOrder = ['fpfile', 'userjs', 'profileUserjs']
+
+const inspectPreview = computed(() => {
+  const files = inspectModal.value.files || {}
+  const selected = inspectModal.value.filter === 'all'
+    ? inspectOrder
+    : [inspectModal.value.filter]
+  const blocks = selected
+    .map((key) => files[key])
+    .filter(Boolean)
+    .map((file) => {
+      const head = `# ${file.name}\n路径: ${file.path}\n状态: ${file.exists ? '已存在' : '不存在'}`
+      const body = file.exists ? (file.content || '（文件为空）') : '（文件不存在）'
+      return `${head}\n\n${body}`
+    })
+  return blocks.join('\n\n------------------------------\n\n') || '（暂无数据）'
+})
 
 async function loadEnvs() {
   envList.value = await window.ruyi.dbListEnvs()
@@ -83,6 +126,49 @@ async function del(id) {
   await window.ruyi.dbDeleteEnv(id)
   if (env) addLog(`环境已删除: ${env.name}`, 'info')
   await loadEnvs()
+}
+
+async function inspect(env) {
+  try {
+    const res = await window.ruyi.inspectEnvFiles(env.id)
+    if (!res?.ok) {
+      const msg = res?.error || '读取失败'
+      addLog(`检查失败: ${msg}`, 'err')
+      alert(`检查失败：${msg}`)
+      return
+    }
+    inspectModal.value.visible = true
+    inspectModal.value.filter = 'all'
+    inspectModal.value.files = res.files || {}
+    addLog(`已打开环境文件检查: ${env.name}`, 'info')
+  } catch (e) {
+    const msg = e?.message || '检查调用失败'
+    addLog(`检查失败: ${msg}`, 'err')
+    alert(`检查失败：${msg}`)
+  }
+}
+
+function closeInspectModal() {
+  inspectModal.value.visible = false
+  inspectModal.value.files = null
+}
+
+async function copyInspectText() {
+  const text = inspectPreview.value || ''
+  if (!text) return
+  try {
+    await navigator.clipboard.writeText(text)
+  } catch (_) {
+    const textarea = document.createElement('textarea')
+    textarea.value = text
+    textarea.setAttribute('readonly', '')
+    textarea.style.position = 'absolute'
+    textarea.style.left = '-9999px'
+    document.body.appendChild(textarea)
+    textarea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textarea)
+  }
 }
 
 onMounted(loadEnvs)
