@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, Menu } = require('electron')
 const path = require('path')
 const fs = require('fs')
+const net = require('net')
 const https = require('https')
 const http = require('http')
 const { spawn } = require('child_process')
@@ -16,6 +17,7 @@ function getDataDir(...subPaths) {
 let mainWindow
 let pythonProcess = null
 let db = null
+const activeBridges = new Map() // envId → { server, port }
 
 // ─── SQLite 数据库 ────────────────────────────────────────────────────────────
 
@@ -217,13 +219,51 @@ function registerIpcHandlers() {
         const fpfilePath = path.join(envDir, 'fpfile.txt')
         const profileDir = getDataDir('profiles', String(env.id))
         if (!fs.existsSync(profileDir)) fs.mkdirSync(profileDir, { recursive: true })
-        // 代理配置写入到 profile/user.js（foxprint 启动时会读取 profile 目录）
-        const userJsFrom = path.join(envDir, 'user.js')
-        const userJsTo = path.join(profileDir, 'user.js')
-        if (fs.existsSync(userJsFrom)) fs.copyFileSync(userJsFrom, userJsTo)
+
         // 删除 prefs.js，防止旧代理配置残留干扰 user.js 的设置
         const prefsJsPath = path.join(profileDir, 'prefs.js')
         if (fs.existsSync(prefsJsPath)) fs.unlinkSync(prefsJsPath)
+
+        // SOCKS5 代理：本地起 HTTP→SOCKS5 桥，让 Firefox 走本地 HTTP 代理
+        if (env.proxy_type === 'socks5' && env.proxy_host) {
+          // 关闭该环境上一次残留的桥（防止重复启动时端口泄漏）
+          const prev = activeBridges.get(env.id)
+          if (prev) { try { prev.server.close() } catch (_) {} }
+
+          const bridge = await startSocks5Bridge(
+            env.proxy_host, Number(env.proxy_port),
+            env.proxy_user || '', env.proxy_pass || ''
+          )
+          activeBridges.set(env.id, bridge)
+
+          // user.js 指向本地 HTTP 代理
+          const localProxyPrefs = [
+            `user_pref("network.proxy.type", 1);`,
+            `user_pref("network.proxy.http", "127.0.0.1");`,
+            `user_pref("network.proxy.http_port", ${bridge.port});`,
+            `user_pref("network.proxy.ssl", "127.0.0.1");`,
+            `user_pref("network.proxy.ssl_port", ${bridge.port});`,
+            `user_pref("network.proxy.socks", "");`,
+            `user_pref("network.proxy.socks_port", 0);`,
+            `user_pref("network.proxy.no_proxies_on", "");`,
+          ]
+          fs.writeFileSync(path.join(profileDir, 'user.js'), localProxyPrefs.join('\n') + '\n', 'utf8')
+
+          const child = spawn(foxprintPath, [`--fpfile=${fpfilePath}`, `--profile=${profileDir}`], {
+            cwd: path.dirname(foxprintPath), detached: true, stdio: 'ignore', windowsHide: false,
+          })
+          child.unref()
+          child.on('exit', () => {
+            const b = activeBridges.get(env.id)
+            if (b) { try { b.server.close() } catch (_) {} activeBridges.delete(env.id) }
+          })
+          return { ok: true, data: { pid: child.pid, mode: 'socks5-bridge', localPort: bridge.port } }
+        }
+
+        // HTTP 代理 / 直连：原有逻辑
+        const userJsFrom = path.join(envDir, 'user.js')
+        const userJsTo = path.join(profileDir, 'user.js')
+        if (fs.existsSync(userJsFrom)) fs.copyFileSync(userJsFrom, userJsTo)
 
         // 直接按 foxprint 文档方式启动，不经过 Python bridge
         const args = [
@@ -776,4 +816,106 @@ function downloadFile(url, dest, onProgress) {
     }
     doGet(url)
   })
+}
+
+// ─── SOCKS5→HTTP 本地桥接代理 ─────────────────────────────────────────────────
+// 在本地随机端口起一个 HTTP CONNECT 代理，将流量转发到 SOCKS5 代理服务器
+function startSocks5Bridge(socksHost, socksPort, socksUser, socksPass) {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer((clientSocket) => {
+      let headerBuf = Buffer.alloc(0)
+      let headerDone = false
+
+      clientSocket.on('data', (chunk) => {
+        if (headerDone) return
+        headerBuf = Buffer.concat([headerBuf, chunk])
+        const headerEnd = headerBuf.indexOf('\r\n\r\n')
+        if (headerEnd === -1) return
+        headerDone = true
+
+        const headerStr = headerBuf.slice(0, headerEnd).toString()
+        const firstLine = headerStr.split('\r\n')[0]
+        const m = firstLine.match(/^CONNECT\s+([^:]+):(\d+)/i)
+        if (!m) {
+          clientSocket.write('HTTP/1.1 400 Bad Request\r\n\r\n')
+          clientSocket.destroy()
+          return
+        }
+        const targetHost = m[1]
+        const targetPort = Number(m[2])
+
+        // 建立到 SOCKS5 代理的连接
+        const socksSocket = net.createConnection({ host: socksHost, port: socksPort }, () => {
+          // Step 1: 握手，声明支持的认证方式
+          const hasAuth = socksUser && socksPass
+          socksSocket.write(Buffer.from(hasAuth ? [0x05, 0x01, 0x02] : [0x05, 0x01, 0x00]))
+        })
+
+        socksSocket.setTimeout(10000)
+        socksSocket.on('timeout', () => {
+          clientSocket.write('HTTP/1.1 504 Gateway Timeout\r\n\r\n')
+          socksSocket.destroy(); clientSocket.destroy()
+        })
+        socksSocket.on('error', (e) => {
+          clientSocket.write(`HTTP/1.1 502 Bad Gateway\r\n\r\n`)
+          clientSocket.destroy()
+        })
+        clientSocket.on('error', () => socksSocket.destroy())
+
+        let step = 0
+        socksSocket.on('data', (data) => {
+          if (step === 0) {
+            // 方法选择响应
+            if (data[0] !== 0x05) { socksSocket.destroy(); clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n'); clientSocket.destroy(); return }
+            const method = data[1]
+            if (method === 0xFF) { socksSocket.destroy(); clientSocket.write('HTTP/1.1 407 Proxy Auth Required\r\n\r\n'); clientSocket.destroy(); return }
+            step = 1
+            if (method === 0x02) {
+              // 用户名密码认证
+              const u = Buffer.from(socksUser), p = Buffer.from(socksPass)
+              socksSocket.write(Buffer.concat([Buffer.from([0x01, u.length]), u, Buffer.from([p.length]), p]))
+            } else {
+              // 无需认证，直接发 CONNECT 请求
+              step = 2
+              socksSocket.write(buildSocks5ConnectRequest(targetHost, targetPort))
+            }
+          } else if (step === 1) {
+            // 认证响应
+            if (data[1] !== 0x00) { socksSocket.destroy(); clientSocket.write('HTTP/1.1 407 Proxy Auth Required\r\n\r\n'); clientSocket.destroy(); return }
+            step = 2
+            socksSocket.write(buildSocks5ConnectRequest(targetHost, targetPort))
+          } else if (step === 2) {
+            // CONNECT 响应
+            if (data[1] !== 0x00) { socksSocket.destroy(); clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n'); clientSocket.destroy(); return }
+            // 成功，告知 Firefox 隧道建立
+            clientSocket.write('HTTP/1.1 200 Connection Established\r\n\r\n')
+            step = 3
+            // 双向透传
+            socksSocket.removeAllListeners('data')
+            clientSocket.removeAllListeners('data')
+            socksSocket.pipe(clientSocket)
+            clientSocket.pipe(socksSocket)
+            socksSocket.setTimeout(0)
+          }
+        })
+      })
+
+      clientSocket.on('error', () => {})
+    })
+
+    server.listen(0, '127.0.0.1', () => {
+      const { port } = server.address()
+      resolve({ server, port })
+    })
+    server.on('error', reject)
+  })
+}
+
+function buildSocks5ConnectRequest(host, port) {
+  const hostBuf = Buffer.from(host)
+  return Buffer.concat([
+    Buffer.from([0x05, 0x01, 0x00, 0x03, hostBuf.length]),
+    hostBuf,
+    Buffer.from([port >> 8, port & 0xFF]),
+  ])
 }

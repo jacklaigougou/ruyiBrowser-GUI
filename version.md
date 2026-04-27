@@ -2,7 +2,15 @@
 
 ## [Unreleased]
 
-### v0.5.2 — fix: 代理切换后旧配置残留导致无法连接
+### v0.5.3 — feat: SOCKS5→HTTP 本地桥接代理
+
+- `src/main/main.js`：
+  - 新增 `startSocks5Bridge(host, port, user, pass)`：纯 Node.js net 实现本地 HTTP CONNECT→SOCKS5 转发，支持用户名密码认证，随机端口，双向 pipe 透传
+  - 新增 `buildSocks5ConnectRequest(host, port)`：构造 SOCKS5 CONNECT 报文（domain 类型，DNS 在远端解析）
+  - 新增 `activeBridges` Map：跟踪每个环境的本地代理实例，浏览器退出后自动关闭
+  - `ruyi:launch`：SOCKS5 环境启动时先起本地桥，user.js 写 `127.0.0.1:localPort`，HTTP/直连环境走原有逻辑不变
+
+
 
 - `src/main/main.js`：
   - `writeEnvFiles()`：SOCKS5 模式下额外清空 http/ssl pref，HTTP 模式下额外清空 socks pref，防止切换代理类型时旧键残留在 prefs.js 中
