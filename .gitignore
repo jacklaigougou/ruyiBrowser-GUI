@@ -1,0 +1,12 @@
+node_modules/
+.vite/
+dist/
+.DS_Store
+*.log
+__pycache__/
+*.pyc
+*.pyo
+.env
+.claude/
+python/.venv/
+data/
