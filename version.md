@@ -1,6 +1,22 @@
 # Changelog
 
-## [Unreleased]
+## v0.5.10
+
+### fix: 锁定 foxprint 下载至 firefox-151 release
+
+- `src/main/main.js`：下载地址从 `releases/latest` 改为 `releases/tags/151`，精确匹配 `firefox-151.0a1.en-US.win64.installer.exe`
+
+### feat: 界面显示应用版本号
+
+- `src/main/main.js`：新增 `ruyi:app-meta` IPC handler，返回应用版本和名称
+- `src/preload/preload.js`：暴露 `appMeta()`
+- `src/renderer/components/AppSidebar.vue`：侧边栏底部显示版本号
+- `src/renderer/views/settings/index.vue`：设置页标题旁显示版本号
+- `src/renderer/style.css`：新增 `.page-subtle`、`.sidebar-version` 样式
+
+### fix: 打包后主进程缺少 socks 模块导致启动崩溃
+
+- `package.json`：将 **`socks`** 声明为 **dependencies**（此前仅在代码 `require('socks')`，未列入依赖，electron-builder 不会打入安装包）
 
 ### feat: 「根据 IP 设置」国内数据源与网络容错
 

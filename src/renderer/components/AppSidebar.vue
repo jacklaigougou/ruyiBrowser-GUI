@@ -30,10 +30,19 @@
       <span class="dot" :class="online ? 'dot--on' : 'dot--off'"></span>
       <span>{{ online ? 'Python服务已连接' : '服务未连接' }}</span>
     </div>
+    <div v-if="appVersion" class="sidebar-version">v{{ appVersion }}</div>
   </aside>
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue'
 import { useHealthStore } from '../composables/useHealth'
 const { online } = useHealthStore()
+const appVersion = ref('')
+onMounted(async () => {
+  try {
+    const m = await window.ruyi.appMeta()
+    if (m?.version) appVersion.value = m.version
+  } catch (_) {}
+})
 </script>

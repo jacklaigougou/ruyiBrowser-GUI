@@ -2,6 +2,7 @@
   <div class="page-card">
     <div class="page-header">
       <span class="page-title">服务配置</span>
+      <span v-if="appVersion" class="page-subtle">v{{ appVersion }}</span>
     </div>
     <div class="settings-form">
       <label>Python服务地址
@@ -19,13 +20,21 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { addLog } from '../../composables/useLogs'
 
 const baseUrl = ref('http://127.0.0.1:7788')
 const timeout = ref(30000)
 const result = ref('')
 const status = ref('')
+const appVersion = ref('')
+
+onMounted(async () => {
+  try {
+    const m = await window.ruyi.appMeta()
+    if (m?.version) appVersion.value = m.version
+  } catch (_) {}
+})
 
 async function save() {
   const res = await window.ruyi.config({ baseUrl: baseUrl.value, timeout: timeout.value })

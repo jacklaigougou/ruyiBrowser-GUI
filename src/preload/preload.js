@@ -4,6 +4,7 @@ const { contextBridge, ipcRenderer } = require('electron')
 contextBridge.exposeInMainWorld('ruyi', {
   // 服务状态
   health: () => ipcRenderer.invoke('ruyi:health'),
+  appMeta: () => ipcRenderer.invoke('ruyi:app-meta'),
   config: (cfg) => ipcRenderer.invoke('ruyi:config', cfg),
   devtools: () => ipcRenderer.invoke('ruyi:devtools'),
 

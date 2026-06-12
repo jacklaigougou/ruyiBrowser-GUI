@@ -331,6 +331,11 @@ function registerIpcHandlers() {
     return pythonBridge.health()
   })
 
+  ipcMain.handle('ruyi:app-meta', async () => ({
+    version: app.getVersion(),
+    name: app.getName(),
+  }))
+
   // 查询 IP 地理信息（时区/语言等）
   ipcMain.handle('ruyi:query-ip', async (_event, ip) => {
     return queryIp(ip || '')
@@ -425,12 +430,12 @@ function registerIpcHandlers() {
     if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true })
     const destPath = getDataDir('foxprint', 'foxprint.exe')
 
-    // 查询最新 GitHub Release
+    // 查询指定 GitHub Release (tag: 151)
     const releaseMeta = await fetchJson(
-      'https://api.github.com/repos/LoseNine/firefox-fingerprintBrowser/releases/latest'
+      'https://api.github.com/repos/LoseNine/firefox-fingerprintBrowser/releases/tags/151'
     )
-    const asset = releaseMeta.assets?.find(a => a.name.toLowerCase().endsWith('.exe'))
-    if (!asset) throw new Error('未找到 .exe 资源')
+    const asset = releaseMeta.assets?.find(a => a.name === 'firefox-151.0a1.en-US.win64.installer.exe')
+    if (!asset) throw new Error('未找到 firefox-151.0a1.en-US.win64.installer.exe 资源')
 
     const downloadUrl = asset.browser_download_url
     const totalSize = asset.size
